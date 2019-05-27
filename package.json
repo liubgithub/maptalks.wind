@@ -1,0 +1,59 @@
+{
+  "name": "mesh-simplify",
+  "version": "0.1.1",
+  "description": "",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fuzhenn/mesh-simplify.git"
+  },
+  "main": "dist/simplify.js",
+  "browser": "dist/simplify.js",
+  "module": "dist/simplify.es.js",
+  "jsnext:main": "dist/simplify.es.js",
+  "files": [
+    "dist/simplify.js",
+    "dist/simplify.es.js"
+  ],
+  "scripts": {
+    "dev": "rollup -w -c rollup.config.js",
+    "build": "rollup --environment BUILD:production -c rollup.config.js",
+    "build-dev": "rollup -c rollup.config.js",
+    "pretest": "npm run lint && npm run build",
+    "test": "karma start --single-run",
+    "tdd": "karma start --no-single-run",
+    "preversion": "npm run lint",
+    "version": "npm run build",
+    "lint": "eslint src/**/*.js test/**/*.js",
+    "prepublish": "npm run lint && npm run build"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.2.2",
+    "@babel/preset-env": "^7.2.3",
+    "babel-eslint": "^10.0.1",
+    "eslint": "^5.11.1",
+    "eslint-config-maptalks": "^0.3.0",
+    "eslint-plugin-mocha": "^5.0.0",
+    "expect.js": "^0.3.1",
+    "karma": "^3.1.1",
+    "karma-chrome-launcher": "^2.2.0",
+    "karma-expect": "^1.1.3",
+    "karma-ie-launcher": "^1.0.0",
+    "karma-mocha": "^1.3.0",
+    "karma-mocha-reporter": "^2.2.5",
+    "maptalks": "^0.43.0",
+    "mocha": "^5.2.0",
+    "rollup": "^1.0.1",
+    "rollup-plugin-babel": "^4.2.0",
+    "rollup-plugin-commonjs": "^9.2.0",
+    "rollup-plugin-node-resolve": "^4.0.0",
+    "rollup-plugin-terser": "^4.0.1",
+    "rollup-plugin-uglify": "^6.0.0"
+  },
+  "peerDependencies": {
+    "maptalks": "<2.0.0"
+  },
+  "dependencies": {
+    "@maptalks/gl": "^0.1.16"
+  }
+}

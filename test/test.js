@@ -1,0 +1,2 @@
+describe('maptalks wind', function () {
+});
