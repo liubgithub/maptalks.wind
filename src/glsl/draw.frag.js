@@ -1,4 +1,4 @@
-precision mediump float;
+export default `precision mediump float;
 
 uniform sampler2D u_wind;
 uniform vec2 u_wind_min;
@@ -17,4 +17,4 @@ void main() {
         floor(16.0 * speed_t) / 16.0);
 
     gl_FragColor = texture2D(u_color_ramp, ramp_pos);
-}
+}`;

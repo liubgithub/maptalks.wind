@@ -1,4 +1,4 @@
-precision highp float;
+export default `precision highp float;
 
 uniform sampler2D u_particles;
 uniform sampler2D u_wind;
@@ -64,4 +64,4 @@ void main() {
     gl_FragColor = vec4(
         fract(pos * 255.0),
         floor(pos * 255.0) / 255.0);
-}
+}`;

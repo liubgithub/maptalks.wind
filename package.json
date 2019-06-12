@@ -1,19 +1,19 @@
 {
-  "name": "mesh-simplify",
+  "name": "@maptalks/wind-layer",
   "version": "0.1.1",
-  "description": "",
+  "description": "A maptalks Layer to render gltf",
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
-    "url": "https://github.com/fuzhenn/mesh-simplify.git"
+    "url": "https://github.com/maptalks/maptalks.WindLayer.git"
   },
-  "main": "dist/simplify.js",
-  "browser": "dist/simplify.js",
-  "module": "dist/simplify.es.js",
-  "jsnext:main": "dist/simplify.es.js",
+  "main": "dist/maptalks.WindLayer.js",
+  "browser": "dist/maptalks.WindLayer.js",
+  "module": "dist/maptalks.WindLayer.es.js",
+  "jsnext:main": "dist/maptalks.WindLayer.es.js",
   "files": [
-    "dist/simplify.js",
-    "dist/simplify.es.js"
+    "dist/maptalks.WindLayer.js",
+    "dist/maptalks.WindLayer.es.js"
   ],
   "scripts": {
     "dev": "rollup -w -c rollup.config.js",
@@ -54,6 +54,8 @@
     "maptalks": "<2.0.0"
   },
   "dependencies": {
-    "@maptalks/gl": "^0.1.16"
+    "@maptalks/gl": "^0.1.16",
+    "caniuse-lite": "^1.0.30000974",
+    "zousan": "^2.3.3"
   }
 }

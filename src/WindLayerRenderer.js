@@ -1,13 +1,12 @@
 import * as maptalks from 'maptalks';
 import { createREGL, mat4, vec3, vec4, quat, reshader } from '@maptalks/gl';
-import drawVert from './shaders/draw.vert.glsl';
-import drawFrag from './shaders/draw.frag.glsl';
+import drawVert from './glsl/draw.vert.js';
+import drawFrag from './glsl/draw.frag.js';
 
-import quadVert from './shaders/quad.vert.glsl';
+import quadVert from './glsl/quad.vert.js';
 
-import screenFrag from './shaders/screen.frag.glsl';
-import updateFrag from './shaders/update.frag.glsl';
-import { timingSafeEqual } from 'crypto';
+import screenFrag from './glsl/screen.frag.js';
+import updateFrag from './glsl/update.frag.js';
 
 const defaultRampColors = {
     0.0: '#3288bd',
@@ -23,21 +22,23 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
 
     constructor(layer) {
         super(layer);
-        this.fadeOpacity = 0.996; // how fast the particle trails fade on each frame
-        this.speedFactor = 0.25; // how fast the particles move
-        this.dropRate = 0.003; // how often the particles move to a random place
-        this.dropRateBump = 0.01; // drop rate increase relative to individual particle speed
+        this._fadeOpacity = 0.996; // how fast the particle trails fade on each frame
+        this._speedFactor = 0.25; // how fast the particles move
+        this._dropRate = 0.003; // how often the particles move to a random place
+        this._dropRateBump = 0.01; // drop rate increase relative to individual particle speed
     }
 
     draw(timestamp) {
-        ANIMATION_TIME = timestamp;
         this.prepareCanvas();
         this._renderWindScene();
     }
 
     drawOnInteracting(e, timestamp) {
-        ANIMATION_TIME = timestamp;
         this._renderWindScene();
+    }
+
+    needToRedraw() {
+        return true;
     }
 
     hitDetect() {
@@ -74,6 +75,7 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
 
     _initRenderer() {
         this.renderer = new reshader.Renderer(this.regl);
+        this.SetParticlesCount(256 * 256);
         const viewport = {
             x : 0,
             y : 0,
@@ -84,31 +86,17 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
                 return this.canvas ? this.canvas.height : 1;
             }
         };
-        const uniforms = [
-            {
-                name : 'projViewModelMatrix',
-                type : 'function',
-                fn : function (context, props) {
-                    const projViewModelMatrix = [];
-                    mat4.multiply(projViewModelMatrix, props['viewMatrix'], props['modelMatrix']);
-                    mat4.multiply(projViewModelMatrix, props['projMatrix'], projViewModelMatrix);
-                    return projViewModelMatrix;
-                }
-            },
-            {
-                name : 'viewModelMatrix',
-                type : 'function',
-                fn : function (context, props) {
-                    const viewModelMatrix = [];
-                    mat4.multiply(viewModelMatrix, props['viewMatrix'], props['modelMatrix']);
-                    return viewModelMatrix;
-                }
-            }
-        ];
         this.drawShader = new reshader.MeshShader({
             vert : drawVert,
             frag : drawFrag,
-            uniforms,
+            uniforms : [
+                'u_wind',
+                'u_particles',
+                'u_color_ramp',
+                'u_particles_res',
+                'u_wind_min',
+                'u_wind_max'
+            ],
             extraCommandProps : { viewport },
             defines : {}
         });
@@ -116,7 +104,10 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
         this.screenShader = new reshader.MeshShader({
             vert : quadVert,
             frag : screenFrag,
-            uniforms,
+            uniforms: [
+                'u_screen',
+                'u_opacity'
+            ],
             extraCommandProps : { viewport },
             defines : {}
         });
@@ -124,20 +115,51 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
         this.updateSHader = new reshader.MeshShader({
             vert : quadVert,
             frag : updateFrag,
-            uniforms,
+            uniforms: [
+                'u_wind',
+                'u_particles',
+                'u_rand_seed',
+                'u_wind_res',
+                'u_wind_min',
+                'u_wind_max',
+                'u_speed_factor',
+                'u_drop_rate',
+                'u_drop_rate_bump'
+            ],
             extraCommandProps : { viewport },
             defines : {}
         });
 
-        this.setColorRamp(defaultRampColors);
-        this.framebuffer = regl.framebuffer({
-            color: regl.texture({
-                width: canvas.width / 2,
-                height: canvas.height / 2,
+        this._setColorRamp(defaultRampColors);
+        this.framebuffer = this.regl.framebuffer({
+            color: this.regl.texture({
+                width: this.canvas.width,
+                height: this.canvas.height,
                 wrap: 'clamp'
             }),
             depth: true
         });
+        this._windTexture = this.regl.texture({
+            data : this._windData.image,
+            mag: 'linear',
+            min: 'linear'
+        });
+    }
+
+    _createGLContext(canvas, options) {
+        const names = ['webgl', 'experimental-webgl'];
+        let context = null;
+        /* eslint-disable no-empty */
+        for (let i = 0; i < names.length; ++i) {
+            try {
+                context = canvas.getContext(names[i], options);
+            } catch (e) {}
+            if (context) {
+                break;
+            }
+        }
+        return context;
+        /* eslint-enable no-empty */
     }
 
     resizeCanvas(size) {
@@ -145,12 +167,12 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
         const width = this.canvas.width;
         const height = this.canvas.height;
         const emptyPixels = new Uint8Array(width * height * 4);
-        this.backgroundTexture = this.regl.texture({
+        this._backgroundTexture = this.regl.texture({
             width,
             height,
             data : emptyPixels
         });
-        this.screenTexture = this.regl.texture({
+        this._screenTexture = this.regl.texture({
             width,
             height,
             data : emptyPixels
@@ -159,13 +181,12 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
 
     _setData(data) {
         this._windData = data;
-        this._windTexture = this.regl.texture(this._windData.image);
     }
 
     SetParticlesCount(count) {
         const gl = this.gl;
         // we create a square texture where each pixel will hold a particle position encoded as RGBA
-        const particleRes = this.particleStateResolution = Math.ceil(Math.sqrt(count));
+        const particleRes = this._particleStateResolution = Math.ceil(Math.sqrt(count));
         this._numParticles = this.options.count = particleRes * particleRes;
 
         const particleState = new Uint8Array(this._numParticles * 4);
@@ -173,12 +194,12 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
             particleState[i] = Math.floor(Math.random() * 256); // randomize the initial particle positions
         }
         // textures to hold the particle state for the current and the next frame
-        this.particleStateTexture0 = this.regl.texture({
+        this._particleStateTexture0 = this.regl.texture({
             data : particleState,
             width : particleRes,
             height : particleRes
         });
-        this.particleStateTexture1 = this.regl.texture({
+        this._particleStateTexture1 = this.regl.texture({
             data : particleState,
             width : particleRes,
             height : particleRes
@@ -190,19 +211,19 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
         }
     }
 
-    setColorRamp(colors) {
+    _setColorRamp(colors) {
         // lookup texture for colorizing the particles according to their speed
         // this.colorRampTexture = util.createTexture(this.gl, this.gl.LINEAR, getColorRamp(colors), 16, 16);
-        this.colorRampTexture = this.regl.texture({
+        this._colorRampTexture = this.regl.texture({
             width : 16,
             height : 16,
-            data : this.getColorRamp(colors),
+            data : this._getColorRamp(colors),
             mag : 'linear',
             min : 'linear'
         });
     }
 
-    getColorRamp(colors) {
+    _getColorRamp(colors) {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
     
@@ -225,6 +246,7 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
             a_pos : [0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1]
         }, 6, 0, {
             primitive : 'triangle',
+            positionAttribute: 'a_pos',
             positionSize : 2
         });
         const planeMesh = new reshader.Mesh(plane);
@@ -237,42 +259,71 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
             a_index : this._particleIndices,
         }, this._particleIndices.length, 0, {
             primitive : 'point',
+            positionAttribute: 'a_index',
             positionSize : 1
         });
-
         const particlesMesh = new reshader.Mesh(particles);
         const scene = new reshader.Scene([particlesMesh]);
         return scene;
     }
 
     _drawScreen() {
-        if (this.screenTexture) {
-            this.framebuffer({
-                color : this.screenTexture
-            });
-        }
+        this.framebuffer({
+            color : this._screenTexture
+        });
+        this._drawParticles();
         const quadScene = this._getQuadScene();
         this.renderer.render(this.screenShader,{
-            u_screen : this.backgroundTexture,
-            u_opacity : this.fadeOpacity
+            u_screen : this._backgroundTexture,
+            u_opacity : this._fadeOpacity
         }, quadScene, this.framebuffer);
+
+        this.renderer.render(this.screenShader, {
+            u_screen: this._screenTexture,
+            u_opacity: 1.0
+        }, quadScene);
     }
 
     _drawParticles() {
         const particleScene = this._getParticlesScene();
         this.renderer.render(this.drawShader, {
-           u_wind : this._windTexture,
-           u_color_ramp : this.particleStateTexture0
-        }, particleScene);
+            u_wind: this._windTexture,
+            u_particles: this._particleStateTexture0,
+            u_color_ramp: this._colorRampTexture,
+            u_particles_res: this._particleStateResolution,
+            u_wind_min: [this._windData.uMin, this._windData.vMin],
+            u_wind_max: [this._windData.uMax, this._windData.vMax]
+        }, particleScene, this.framebuffer);
     }
 
-    _drawPlane() {
-        this.SetParticlesCount = this.backgroundTexture;
-        
+    _updateParticles() {
+        this.framebuffer({
+            color: this._particleStateTexture1
+        });
+        const quadScene = this._getQuadScene();
+        this.renderer.render(this.updateSHader, {
+            u_wind: this._windTexture,
+            u_particles: this._particleStateTexture0,
+            u_rand_seed: Math.random(),
+            u_wind_res: [this._windData.width, this._windData.height],
+            u_wind_min: [this._windData.uMin, this._windData.vMin],
+            u_wind_max: [this._windData.uMax, this._windData.vMax],
+            u_speed_factor: this._speedFactor,
+            u_drop_rate: this._dropRate,
+            u_drop_rate_bump: this._dropRateBump,
+        }, quadScene, this.framebuffer);
+
+        const temp = this._particleStateTexture0;
+        this._particleStateTexture0 = this._particleStateTexture1;
+        this._particleStateTexture1 = temp;
     }
 
     _renderWindScene() {
+        if (!this._screenTexture ||!this._backgroundTexture) {
+            return;
+        }
         this._drawScreen();
+        this._updateParticles();
     }
 
 }

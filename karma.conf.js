@@ -10,8 +10,7 @@ module.exports = function (config) {
             }
         },
         files: [
-            'test/js/gltf-loader.js',
-            'dist/mesh-simplify-dev.js',
+            'dist/maptalks.wind-dev.js',
             'test/**/*.js',
             {
                 pattern: 'test/models/**/*',

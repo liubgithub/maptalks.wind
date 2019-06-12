@@ -11,5 +11,6 @@ module.exports = {
         'dist/*.js',
         'test/js/*.js'
     ],
-    'comments': false
+    'comments': false,
+    'compact' : false
 };
