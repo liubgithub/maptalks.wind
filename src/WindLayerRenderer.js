@@ -7,6 +7,8 @@ import quadVert from './glsl/quad.vert.js';
 
 import screenFrag from './glsl/screen.frag.js';
 import updateFrag from './glsl/update.frag.js';
+import windVert from './glsl/windVert.js';
+import windFrag from './glsl/windFrag.js';
 
 const defaultRampColors = {
     0.0: '#3288bd',
@@ -70,12 +72,37 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
             ],
             optionalExtensions : this.layer.options['glExtensions'] || []
         });
+        this.SetParticlesCount(256 * 256);
         this._initRenderer();
+    }
+
+    clearCanvas() {
+        if (!this.canvas) {
+            return;
+        }
+        this.regl.clear({
+            color: [0, 0, 0, 0],
+            depth: 1,
+            stencil : 0
+        });
+        super.clearCanvas();
     }
 
     _initRenderer() {
         this.renderer = new reshader.Renderer(this.regl);
-        this.SetParticlesCount(256 * 256);
+        const width = this.canvas.width;
+        const height = this.canvas.height;
+        const emptyPixels = new Uint8Array(width * height * 4);
+        this._backgroundTexture = this.regl.texture({
+            width,
+            height,
+            data : emptyPixels
+        });
+        this._screenTexture = this.regl.texture({
+            width,
+            height,
+            data : emptyPixels
+        });
         const viewport = {
             x : 0,
             y : 0,
@@ -108,7 +135,7 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
                 'u_screen',
                 'u_opacity'
             ],
-            extraCommandProps : { viewport },
+            extraCommandProps : {},
             defines : {}
         });
 
@@ -126,12 +153,40 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
                 'u_drop_rate',
                 'u_drop_rate_bump'
             ],
-            extraCommandProps : { viewport },
+            extraCommandProps : { 
+                viewport : {
+                    x: 0,
+                    y: 0,
+                    width : this._particleStateResolution,
+                    height : this._particleStateResolution
+                },
+                dither: true 
+            },
             defines : {}
         });
 
+        this.windShader = new reshader.MeshShader({
+            vert: windVert,
+            frag: windFrag,
+            uniforms: [
+                'u_screen',
+                'u_opacity',
+                'projViewMatrix',
+                {
+                    name : 'projViewModelMatrix',
+                    type : 'function',
+                    fn : function (context, props) {
+                        return mat4.multiply([], props['projViewMatrix'], props['modelMatrix']);
+                    }
+                }
+            ],
+            extraCommandProps: { 
+             },
+            defines: {}
+        });
+
         this._setColorRamp(defaultRampColors);
-        this.framebuffer = this.regl.framebuffer({
+        this._framebuffer = this.regl.framebuffer({
             color: this.regl.texture({
                 width: this.canvas.width,
                 height: this.canvas.height,
@@ -164,19 +219,6 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
 
     resizeCanvas(size) {
         super.resizeCanvas(size);
-        const width = this.canvas.width;
-        const height = this.canvas.height;
-        const emptyPixels = new Uint8Array(width * height * 4);
-        this._backgroundTexture = this.regl.texture({
-            width,
-            height,
-            data : emptyPixels
-        });
-        this._screenTexture = this.regl.texture({
-            width,
-            height,
-            data : emptyPixels
-        });
     }
 
     _setData(data) {
@@ -267,8 +309,41 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
         return scene;
     }
 
+    _getWindScene() {
+        const map = this.layer.getMap();
+        const extent = map.getExtent();
+        const xmin = extent.xmin;
+        const xmax = extent.xmax;
+        const ymin = extent.ymin;
+        const ymax = extent.ymax;
+        const plane = new reshader.Geometry({
+            a_pos: [xmin, ymin, 0, 
+                xmax, ymin, 0,
+                xmin, ymax, 0, 
+                xmin, ymax, 0,
+                xmax, ymin, 0, 
+                xmax, ymax, 0],
+            uv : [0, 0, 
+                1, 0, 
+                0, 1, 
+                0, 1, 
+                1, 0, 
+                1, 1]
+        }, 6, 0, {
+            primitive: 'triangle',
+            positionAttribute: 'a_pos',
+            positionSize: 3
+        });
+        const planeMesh = new reshader.Mesh(plane);
+        const position = coordinateToWorld(this.layer.getMap(), new maptalks.Coordinate([0, 0]));
+        const transformMat = mat4.fromRotationTranslationScale([], [0, 0, 0, 1], position, [1, 2, 1]);
+        planeMesh.setLocalTransform(transformMat);
+        const scene = new reshader.Scene([planeMesh]);
+        return scene;
+    }
+
     _drawScreen() {
-        this.framebuffer({
+        this._framebuffer({
             color : this._screenTexture
         });
         this._drawParticles();
@@ -276,12 +351,20 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
         this.renderer.render(this.screenShader,{
             u_screen : this._backgroundTexture,
             u_opacity : this._fadeOpacity
-        }, quadScene, this.framebuffer);
-
-        this.renderer.render(this.screenShader, {
+        }, quadScene, this._framebuffer);
+        const windScene = this._getWindScene();
+        this.renderer.render(this.windShader, {
             u_screen: this._screenTexture,
-            u_opacity: 1.0
-        }, quadScene);
+            u_opacity: 1.0,
+            projViewMatrix : map.projViewMatrix
+        }, windScene);
+        // this.renderer.render(this.screenShader, {
+        //     u_screen: this._screenTexture,
+        //     u_opacity: 1.0,
+        // }, quadScene);
+        const temp = this._backgroundTexture;
+        this._backgroundTexture = this._screenTexture;
+        this._screenTexture = temp;
     }
 
     _drawParticles() {
@@ -293,11 +376,11 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
             u_particles_res: this._particleStateResolution,
             u_wind_min: [this._windData.uMin, this._windData.vMin],
             u_wind_max: [this._windData.uMax, this._windData.vMax]
-        }, particleScene, this.framebuffer);
+        }, particleScene, this._framebuffer);
     }
 
     _updateParticles() {
-        this.framebuffer({
+        this._framebuffer({
             color: this._particleStateTexture1
         });
         const quadScene = this._getQuadScene();
@@ -311,12 +394,13 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
             u_speed_factor: this._speedFactor,
             u_drop_rate: this._dropRate,
             u_drop_rate_bump: this._dropRateBump,
-        }, quadScene, this.framebuffer);
+        }, quadScene, this._framebuffer);
 
         const temp = this._particleStateTexture0;
         this._particleStateTexture0 = this._particleStateTexture1;
         this._particleStateTexture1 = temp;
     }
+    //http://106.14.203.229:8088/nfgk
 
     _renderWindScene() {
         if (!this._screenTexture ||!this._backgroundTexture) {
@@ -329,3 +413,15 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
 }
 
 export default WindLayerRenderer;
+
+function coordinateToWorld(map, coordinate, z = 0) {
+    if (!map) {
+        return null;
+    }
+    const p = map.coordinateToPoint(coordinate, getTargetZoom(map));
+    return [p.x, p.y, z];
+}
+
+function getTargetZoom(map) {
+    return map.getGLZoom();
+}
