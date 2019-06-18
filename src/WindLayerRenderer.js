@@ -117,6 +117,9 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
             vert : drawVert,
             frag : drawFrag,
             uniforms : [
+                'res',
+                'center',
+                'level',
                 'u_wind',
                 'u_particles',
                 'u_color_ramp',
@@ -143,6 +146,9 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
             vert : quadVert,
             frag : updateFrag,
             uniforms: [
+                'res',
+                'center',
+                'level',
                 'u_wind',
                 'u_particles',
                 'u_rand_seed',
@@ -298,7 +304,7 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
 
     _getParticlesScene() {
         const particles = new reshader.Geometry({
-            a_index : this._particleIndices,
+            a_index : this._particleIndices
         }, this._particleIndices.length, 0, {
             primitive : 'point',
             positionAttribute: 'a_index',
@@ -311,32 +317,39 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
 
     _getWindScene() {
         const map = this.layer.getMap();
-        const extent = map.getExtent();
-        const xmin = extent.xmin;
-        const xmax = extent.xmax;
-        const ymin = extent.ymin;
-        const ymax = extent.ymax;
         const plane = new reshader.Geometry({
-            a_pos: [xmin, ymin, 0, 
-                xmax, ymin, 0,
-                xmin, ymax, 0, 
-                xmin, ymax, 0,
-                xmax, ymin, 0, 
-                xmax, ymax, 0],
-            uv : [0, 0, 
+            a_pos: [
+                -1, -1, 0, 
+                1, -1, 0,
+                -1, 1, 0, 
+                -1, 1, 0,
+                1, -1, 0, 
+                1, 1, 0
+            ],
+            uv : [
+                0, 0, 
                 1, 0, 
                 0, 1, 
                 0, 1, 
                 1, 0, 
-                1, 1]
+                1, 1
+            ]
         }, 6, 0, {
             primitive: 'triangle',
             positionAttribute: 'a_pos',
             positionSize: 3
         });
         const planeMesh = new reshader.Mesh(plane);
-        const position = coordinateToWorld(this.layer.getMap(), new maptalks.Coordinate([0, 0]));
-        const transformMat = mat4.fromRotationTranslationScale([], [0, 0, 0, 1], position, [1, 2, 1]);
+        const center = map.getCenter();
+        const position = coordinateToWorld(this.layer.getMap(), new maptalks.Coordinate(center));
+        // const transformMat = [];
+        // mat4.translate(transformMat, transformMat, position);
+        // mat4.rotate(transformMat, transformMat, Math.PI, [1, 0, 0]);
+        // mat4.scale(transformMat, transformMat, [100, 100, 1]);
+        const rotation = quat.fromEuler([0, 0, 0, 1], 0, 180, 0);
+        const resolution = map.getResolution() * 4;
+        const extent = map.getExtent();
+        const transformMat = mat4.fromRotationTranslationScale([], rotation, position, [resolution, resolution, 1]);
         planeMesh.setLocalTransform(transformMat);
         const scene = new reshader.Scene([planeMesh]);
         return scene;
@@ -358,10 +371,6 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
             u_opacity: 1.0,
             projViewMatrix : map.projViewMatrix
         }, windScene);
-        // this.renderer.render(this.screenShader, {
-        //     u_screen: this._screenTexture,
-        //     u_opacity: 1.0,
-        // }, quadScene);
         const temp = this._backgroundTexture;
         this._backgroundTexture = this._screenTexture;
         this._screenTexture = temp;
@@ -369,7 +378,15 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
 
     _drawParticles() {
         const particleScene = this._getParticlesScene();
+        const map = this.getMap();
+        const center = this.layer.getMap().getCenter();
+        const zoom = map.getZoom();
+        const minZoom = map.getMinZoom();
+        const level = zoom - minZoom;
         this.renderer.render(this.drawShader, {
+            res : [this.canvas.width, this.canvas.height],
+            center : [center.x, center.y],
+            level : level,
             u_wind: this._windTexture,
             u_particles: this._particleStateTexture0,
             u_color_ramp: this._colorRampTexture,
@@ -384,7 +401,15 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
             color: this._particleStateTexture1
         });
         const quadScene = this._getQuadScene();
+        const map = this.getMap();
+        const center = this.layer.getMap().getCenter();
+        const zoom = map.getZoom();
+        const minZoom = map.getMinZoom();
+        const level = zoom - minZoom;
         this.renderer.render(this.updateSHader, {
+            res : [this.canvas.width, this.canvas.height],
+            center : [center.x, center.y],
+            level : level,
             u_wind: this._windTexture,
             u_particles: this._particleStateTexture0,
             u_rand_seed: Math.random(),
@@ -400,7 +425,6 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
         this._particleStateTexture0 = this._particleStateTexture1;
         this._particleStateTexture1 = temp;
     }
-    //http://106.14.203.229:8088/nfgk
 
     _renderWindScene() {
         if (!this._screenTexture ||!this._backgroundTexture) {
@@ -408,6 +432,13 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
         }
         this._drawScreen();
         this._updateParticles();
+    }
+
+    _getCenterPoint() {
+        const map = this.layer.getMap();
+        const center = map.getCenter();
+        const point = map.coordinateToViewPoint(center);
+        return point;
     }
 
 }
@@ -418,10 +449,6 @@ function coordinateToWorld(map, coordinate, z = 0) {
     if (!map) {
         return null;
     }
-    const p = map.coordinateToPoint(coordinate, getTargetZoom(map));
+    const p = map.coordinateToPoint(coordinate, map.getGLZoom());
     return [p.x, p.y, z];
-}
-
-function getTargetZoom(map) {
-    return map.getGLZoom();
 }

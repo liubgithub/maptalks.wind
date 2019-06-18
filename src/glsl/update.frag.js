@@ -12,6 +12,10 @@ uniform float u_drop_rate_bump;
 
 varying vec2 v_tex_pos;
 
+uniform vec2 res;
+uniform vec2 center;
+uniform float level;
+
 // pseudo-random generator
 const vec3 rand_constants = vec3(12.9898, 78.233, 4375.85453);
 float rand(const vec2 co) {
@@ -22,9 +26,29 @@ float rand(const vec2 co) {
 // wind speed lookup; use manual bilinear filtering based on 4 adjacent pixels for smooth interpolation
 vec2 lookup_wind(const vec2 uv) {
     // return texture2D(u_wind, uv).rg; // lower-res hardware filtering
+
+    vec2 centerUv = vec2((center.x + 180.0)/ 360.0, (center.y + 90.0) / 180.0);
+    vec2 v = centerUv - vec2(0.5, 0.5);
+    vec2 v_particle_pos = uv + v;
+    if(v_particle_pos.x < centerUv.x && v_particle_pos.y < centerUv.y) {
+        v_particle_pos.x = v_particle_pos.x + (centerUv.x - v_particle_pos.x) * (pow(2.0, level) -1.0) / pow(2.0, level);
+        v_particle_pos.y = v_particle_pos.y + (centerUv.y - v_particle_pos.y) * (pow(2.0, level) -1.0) / pow(2.0, level);
+    } else if(v_particle_pos.x < centerUv.x && v_particle_pos.y > centerUv.y) {
+        v_particle_pos.x = v_particle_pos.x + (centerUv.x - v_particle_pos.x) * (pow(2.0, level) -1.0) / pow(2.0, level);
+        v_particle_pos.y = v_particle_pos.y - (v_particle_pos.y - centerUv.y) * (pow(2.0, level) -1.0) / pow(2.0, level);
+    } else if(v_particle_pos.x > centerUv.x && v_particle_pos.y < centerUv.y) {
+        v_particle_pos.x = v_particle_pos.x - (v_particle_pos.x - centerUv.x) * (pow(2.0, level) -1.0) / pow(2.0, level);
+        v_particle_pos.y = v_particle_pos.y + (centerUv.y - v_particle_pos.y) * (pow(2.0, level) -1.0) / pow(2.0, level);
+    } else if(v_particle_pos.x > centerUv.x && v_particle_pos.y > centerUv.y) {
+        v_particle_pos.x = v_particle_pos.x - (v_particle_pos.x - centerUv.x) * (pow(2.0, level) -1.0) / pow(2.0, level);
+        v_particle_pos.y = v_particle_pos.y - (v_particle_pos.y - centerUv.y) * (pow(2.0, level) -1.0) / pow(2.0, level);
+    }
+
     vec2 px = 1.0 / u_wind_res;
-    vec2 vc = (floor(uv * u_wind_res)) * px;
-    vec2 f = fract(uv * u_wind_res);
+    // vec2 vc = (floor(uv * u_wind_res)) * px;
+    // vec2 f = fract(uv * u_wind_res);
+    vec2 vc = (floor(v_particle_pos * u_wind_res)) * px;
+    vec2 f = fract(v_particle_pos * u_wind_res);
     vec2 tl = texture2D(u_wind, vc).rg;
     vec2 tr = texture2D(u_wind, vc + vec2(px.x, 0)).rg;
     vec2 bl = texture2D(u_wind, vc + vec2(0, px.y)).rg;
