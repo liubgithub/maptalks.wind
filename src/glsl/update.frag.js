@@ -12,9 +12,7 @@ uniform float u_drop_rate_bump;
 
 varying vec2 v_tex_pos;
 
-uniform vec2 res;
-uniform vec2 center;
-uniform float level;
+uniform vec4 extent;
 
 // pseudo-random generator
 const vec3 rand_constants = vec3(12.9898, 78.233, 4375.85453);
@@ -27,23 +25,28 @@ float rand(const vec2 co) {
 vec2 lookup_wind(const vec2 uv) {
     // return texture2D(u_wind, uv).rg; // lower-res hardware filtering
 
-    vec2 centerUv = vec2((center.x + 180.0)/ 360.0, (center.y + 90.0) / 180.0);
-    vec2 v = centerUv - vec2(0.5, 0.5);
-    vec2 v_particle_pos = uv + v;
+    float xmin = (extent.x + 180.0) / 360.0;
+    float ymin = (extent.z + 90.0) / 180.0;
+    float xmax = (extent.y + 180.0) / 360.0;
+    float ymax = (extent.w + 90.0) / 180.0;
+    float xWidth = xmax - xmin;
+    float yHeight = ymax - ymin;
+    vec2 centerUv = vec2((xmin + xmax) / 2.0, (ymin + ymax) / 2.0);
+    vec2 v_particle_pos = uv;
+    //三象限
     if(v_particle_pos.x < centerUv.x && v_particle_pos.y < centerUv.y) {
-        v_particle_pos.x = v_particle_pos.x + (centerUv.x - v_particle_pos.x) * (pow(2.0, level) -1.0) / pow(2.0, level);
-        v_particle_pos.y = v_particle_pos.y + (centerUv.y - v_particle_pos.y) * (pow(2.0, level) -1.0) / pow(2.0, level);
-    } else if(v_particle_pos.x < centerUv.x && v_particle_pos.y > centerUv.y) {
-        v_particle_pos.x = v_particle_pos.x + (centerUv.x - v_particle_pos.x) * (pow(2.0, level) -1.0) / pow(2.0, level);
-        v_particle_pos.y = v_particle_pos.y - (v_particle_pos.y - centerUv.y) * (pow(2.0, level) -1.0) / pow(2.0, level);
-    } else if(v_particle_pos.x > centerUv.x && v_particle_pos.y < centerUv.y) {
-        v_particle_pos.x = v_particle_pos.x - (v_particle_pos.x - centerUv.x) * (pow(2.0, level) -1.0) / pow(2.0, level);
-        v_particle_pos.y = v_particle_pos.y + (centerUv.y - v_particle_pos.y) * (pow(2.0, level) -1.0) / pow(2.0, level);
-    } else if(v_particle_pos.x > centerUv.x && v_particle_pos.y > centerUv.y) {
-        v_particle_pos.x = v_particle_pos.x - (v_particle_pos.x - centerUv.x) * (pow(2.0, level) -1.0) / pow(2.0, level);
-        v_particle_pos.y = v_particle_pos.y - (v_particle_pos.y - centerUv.y) * (pow(2.0, level) -1.0) / pow(2.0, level);
+        v_particle_pos.x = v_particle_pos.x * xWidth + xmin;
+        v_particle_pos.y = v_particle_pos.y * yHeight + ymin;
+    } else if(v_particle_pos.x < centerUv.x && v_particle_pos.y > centerUv.y) {//二象限
+        v_particle_pos.x = v_particle_pos.x * xWidth + xmin;
+        v_particle_pos.y = (v_particle_pos.y - 1.0) * yHeight + ymax ;
+    } else if(v_particle_pos.x > centerUv.x && v_particle_pos.y < centerUv.y) {//四象限
+        v_particle_pos.x = (v_particle_pos.x -  1.0) * xWidth + xmax;
+        v_particle_pos.y = v_particle_pos.y * yHeight + ymin;
+    } else if(v_particle_pos.x > centerUv.x && v_particle_pos.y > centerUv.y) {//一象限
+        v_particle_pos.x = (v_particle_pos.x -  1.0) * xWidth + xmax;
+        v_particle_pos.y = (v_particle_pos.y -  1.0) * yHeight + ymax;
     }
-
     vec2 px = 1.0 / u_wind_res;
     // vec2 vc = (floor(uv * u_wind_res)) * px;
     // vec2 f = fract(uv * u_wind_res);

@@ -117,9 +117,7 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
             vert : drawVert,
             frag : drawFrag,
             uniforms : [
-                'res',
-                'center',
-                'level',
+                'extent',
                 'u_wind',
                 'u_particles',
                 'u_color_ramp',
@@ -146,9 +144,7 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
             vert : quadVert,
             frag : updateFrag,
             uniforms: [
-                'res',
-                'center',
-                'level',
+                'extent',
                 'u_wind',
                 'u_particles',
                 'u_rand_seed',
@@ -317,22 +313,39 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
 
     _getWindScene() {
         const map = this.layer.getMap();
+        const extent = map.getExtent();
+        const lt = coordinateToWorld(map, new maptalks.Coordinate([extent.xmin, extent.ymax]));
+        const lb = coordinateToWorld(map, new maptalks.Coordinate(extent.xmin, extent.ymin));
+        const rb = coordinateToWorld(map, new maptalks.Coordinate(extent.xmax, extent.ymin));
+        const rt = coordinateToWorld(map, new maptalks.Coordinate(extent.xmax, extent.ymax));
         const plane = new reshader.Geometry({
             a_pos: [
-                -1, -1, 0, 
-                1, -1, 0,
-                -1, 1, 0, 
-                -1, 1, 0,
-                1, -1, 0, 
-                1, 1, 0
+                // -1, -1, 0, 
+                // 1, -1, 0,
+                // -1, 1, 0, 
+                // -1, 1, 0,
+                // 1, -1, 0, 
+                // 1, 1, 0
+                lb[0], lb[1], lb[2],
+                rb[0], rb[1], rb[2],
+                lt[0], lt[1], lt[2],
+                lt[0], lt[1], lt[2],
+                rb[0], rb[1], rb[2],
+                rt[0], rt[1], rt[2]
             ],
             uv : [
-                0, 0, 
-                1, 0, 
-                0, 1, 
-                0, 1, 
-                1, 0, 
-                1, 1
+                // 0, 0, 
+                // 1, 0, 
+                // 0, 1, 
+                // 0, 1, 
+                // 1, 0, 
+                // 1, 1
+                1,1,
+                0,1,
+                1,0,
+                1,0,
+                0,1,
+                0,0
             ]
         }, 6, 0, {
             primitive: 'triangle',
@@ -340,17 +353,16 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
             positionSize: 3
         });
         const planeMesh = new reshader.Mesh(plane);
-        const center = map.getCenter();
-        const position = coordinateToWorld(this.layer.getMap(), new maptalks.Coordinate(center));
+        // const center = map.getCenter();
         // const transformMat = [];
         // mat4.translate(transformMat, transformMat, position);
         // mat4.rotate(transformMat, transformMat, Math.PI, [1, 0, 0]);
         // mat4.scale(transformMat, transformMat, [100, 100, 1]);
-        const rotation = quat.fromEuler([0, 0, 0, 1], 0, 180, 0);
-        const resolution = map.getResolution() * 4;
-        const extent = map.getExtent();
-        const transformMat = mat4.fromRotationTranslationScale([], rotation, position, [resolution, resolution, 1]);
-        planeMesh.setLocalTransform(transformMat);
+        // const rotation = quat.fromEuler([0, 0, 0, 1], 0, 180, 0);
+        // const resolution = map.getResolution();
+        // const extent = map.getExtent();
+        // const transformMat = mat4.fromRotationTranslationScale([], rotation, position, [resolution, resolution, 1]);
+        // planeMesh.setLocalTransform(transformMat);
         const scene = new reshader.Scene([planeMesh]);
         return scene;
     }
@@ -377,16 +389,10 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
     }
 
     _drawParticles() {
+        const extent = this.layer.getMap().getExtent();
         const particleScene = this._getParticlesScene();
-        const map = this.getMap();
-        const center = this.layer.getMap().getCenter();
-        const zoom = map.getZoom();
-        const minZoom = map.getMinZoom();
-        const level = zoom - minZoom;
         this.renderer.render(this.drawShader, {
-            res : [this.canvas.width, this.canvas.height],
-            center : [center.x, center.y],
-            level : level,
+            extent : [extent.xmin, extent.xmax, -extent.ymax, -extent.ymin],
             u_wind: this._windTexture,
             u_particles: this._particleStateTexture0,
             u_color_ramp: this._colorRampTexture,
@@ -400,16 +406,10 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
         this._framebuffer({
             color: this._particleStateTexture1
         });
+        const extent = this.layer.getMap().getExtent();
         const quadScene = this._getQuadScene();
-        const map = this.getMap();
-        const center = this.layer.getMap().getCenter();
-        const zoom = map.getZoom();
-        const minZoom = map.getMinZoom();
-        const level = zoom - minZoom;
         this.renderer.render(this.updateSHader, {
-            res : [this.canvas.width, this.canvas.height],
-            center : [center.x, center.y],
-            level : level,
+            extent : [extent.xmin, extent.xmax, -extent.ymax, -extent.ymin],
             u_wind: this._windTexture,
             u_particles: this._particleStateTexture0,
             u_rand_seed: Math.random(),
