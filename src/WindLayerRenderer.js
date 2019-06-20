@@ -318,34 +318,74 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
         const lb = coordinateToWorld(map, new maptalks.Coordinate(extent.xmin, extent.ymin));
         const rb = coordinateToWorld(map, new maptalks.Coordinate(extent.xmax, extent.ymin));
         const rt = coordinateToWorld(map, new maptalks.Coordinate(extent.xmax, extent.ymax));
+        const ltPoint = map.containerPointToCoordinate(new maptalks.Point(0, 0));
+        const lbPoint = map.containerPointToCoordinate(new maptalks.Point(0, this.canvas.height));
+        const rbPoint = map.containerPointToCoordinate(new maptalks.Point(this.canvas.width, this.canvas.height));
+        const rtPoint = map.containerPointToCoordinate(new maptalks.Point(this.canvas.width, 0));
+        const width = extent.xmax - extent.xmin;
+        const height = extent.ymax - extent.ymin;
+        const tCenter = [(ltPoint.x + rtPoint.x) / (2 * width), ((ltPoint.y + rtPoint.y) / (2 * height))];
+        const bCenter = [(lbPoint.x + rbPoint.x) / (2 * width), ((lbPoint.y + rbPoint.y) / (2 * height))];
+        let leftTopUv, leftBottomUv, rightTopUv, rightBottomUv;
+        if (tCenter[0] - bCenter[0] != 0) {
+            leftTopUv = [0, (ltPoint.y - extent.ymin) / (extent.ymax - extent.ymin)];
+            leftBottomUv = [(lbPoint.x - extent.xmin) / (extent.xmax - extent.xmin), 0];
+    
+            rightTopUv = [1, 1];
+            const ltlbCenter = [(leftTopUv[0] + leftBottomUv[0]) / 2, (leftTopUv[1] + leftBottomUv[1]) / 2];
+            const k = (rightTopUv[1] - leftTopUv[1]) / (rightTopUv[0] - leftTopUv[0]);
+            const rbX = (2 * k * (ltlbCenter[1] - leftBottomUv[1]) + 2 * ltlbCenter[0] - leftBottomUv[0] + k * k * leftBottomUv[0]) / (k * k + 1);
+            const rbY = k * (rbX - leftTopUv[0]) + leftTopUv[1];
+            rightBottomUv = [rbX, rbY];
+        } else {
+            const topWidth = extent.xmax - extent.xmin
+            const uvLeft = (lbPoint.x - extent.xmin) / topWidth;
+            const uvRight = (rbPoint.x - extent.xmin) / topWidth;
+            leftBottomUv = [uvLeft, 0];
+            rightBottomUv = [uvRight, 0];
+            leftTopUv = [0, 1];
+            rightTopUv = [1, 1];
+        }
+        const leftTop = coordinateToWorld(map, ltPoint);
+        const leftBottom = coordinateToWorld(map, lbPoint);
+        const rightBottom = coordinateToWorld(map, rbPoint);
+        const rightTop = coordinateToWorld(map, rtPoint);
         const plane = new reshader.Geometry({
             a_pos: [
-                // -1, -1, 0, 
-                // 1, -1, 0,
-                // -1, 1, 0, 
-                // -1, 1, 0,
-                // 1, -1, 0, 
-                // 1, 1, 0
-                lb[0], lb[1], lb[2],
-                rb[0], rb[1], rb[2],
-                lt[0], lt[1], lt[2],
-                lt[0], lt[1], lt[2],
-                rb[0], rb[1], rb[2],
-                rt[0], rt[1], rt[2]
+                // lb[0], lb[1], lb[2],//左下
+                // rb[0], rb[1], rb[2],//右下
+                // lt[0], lt[1], lt[2],//左上
+                // lt[0], lt[1], lt[2],//左上
+                // rb[0], rb[1], rb[2],//右下
+                // rt[0], rt[1], rt[2]//右上
+                
+                leftBottom[0], leftBottom[1], leftBottom[2],
+                rightBottom[0], rightBottom[1], rightBottom[2],
+                leftTop[0], leftTop[1], leftTop[2],
+                leftTop[0], leftTop[1], leftTop[2],
+                rightBottom[0], rightBottom[1], rightBottom[2],
+                rightTop[0], rightTop[1], rightTop[2]
             ],
             uv : [
-                // 0, 0, 
-                // 1, 0, 
-                // 0, 1, 
-                // 0, 1, 
-                // 1, 0, 
+                leftBottomUv[0], leftBottomUv[1],
+                rightBottomUv[0],rightBottomUv[1],
+                leftTopUv[0], leftTopUv[1],
+                leftTopUv[0], leftTopUv[1],
+                rightBottomUv[0],rightBottomUv[1],
+                rightTopUv[0], rightTopUv[1]
+                // uvLeft, 0,
+                // uvRight, 0,
+                // 0, 1,
+                // 0, 1,
+                // uvRight, 0,
                 // 1, 1
-                1,1,
-                0,1,
-                1,0,
-                1,0,
-                0,1,
-                0,0
+
+                // 0, 0,
+                // 1, 0,
+                // 0, 1,
+                // 0, 1,
+                // 1, 0,
+                // 1, 1
             ]
         }, 6, 0, {
             primitive: 'triangle',
@@ -365,6 +405,14 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
         // planeMesh.setLocalTransform(transformMat);
         const scene = new reshader.Scene([planeMesh]);
         return scene;
+    }
+
+    _symmetryPoint(x, y, A, B, C) {
+        const A2_B2 = A * A - B * B;
+        const A2B2 = A * A + B * B;
+        const point = [ -(2 * A * B * y + A2_B2 * x + 2 * A * C) / A2B2,
+        -((-A2_B2 * y) + 2 * A * B * x + 2 * B  * C) / A2B2];
+        return point;
     }
 
     _drawScreen() {
@@ -390,9 +438,19 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
 
     _drawParticles() {
         const extent = this.layer.getMap().getExtent();
+        const ltPoint = map.containerPointToCoordinate(new maptalks.Point(0, 0));
+        const lbPoint = map.containerPointToCoordinate(new maptalks.Point(0, this.canvas.height));
+        const rbPoint = map.containerPointToCoordinate(new maptalks.Point(this.canvas.width, this.canvas.height));
+        const rtPoint = map.containerPointToCoordinate(new maptalks.Point(this.canvas.width, 0));
+
+        const leftTop = coordinateToWorld(map, ltPoint);
+        const leftBottom = coordinateToWorld(map, lbPoint);
+        const rightBottom = coordinateToWorld(map, rbPoint);
+        const rightTop = coordinateToWorld(map, rtPoint);
         const particleScene = this._getParticlesScene();
         this.renderer.render(this.drawShader, {
-            extent : [extent.xmin, extent.xmax, -extent.ymax, -extent.ymin],
+            // extent : [extent.xmin, extent.xmax, -extent.ymax, -extent.ymin],
+            extent : [ltPoint.x, rtPoint.x, -rtPoint.y, -lbPoint.y],
             u_wind: this._windTexture,
             u_particles: this._particleStateTexture0,
             u_color_ramp: this._colorRampTexture,
@@ -407,9 +465,19 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
             color: this._particleStateTexture1
         });
         const extent = this.layer.getMap().getExtent();
+        const ltPoint = map.containerPointToCoordinate(new maptalks.Point(0, 0));
+        const lbPoint = map.containerPointToCoordinate(new maptalks.Point(0, this.canvas.height));
+        const rbPoint = map.containerPointToCoordinate(new maptalks.Point(this.canvas.width, this.canvas.height));
+        const rtPoint = map.containerPointToCoordinate(new maptalks.Point(this.canvas.width, 0));
+
+        const leftTop = coordinateToWorld(map, ltPoint);
+        const leftBottom = coordinateToWorld(map, lbPoint);
+        const rightBottom = coordinateToWorld(map, rbPoint);
+        const rightTop = coordinateToWorld(map, rtPoint);
         const quadScene = this._getQuadScene();
         this.renderer.render(this.updateSHader, {
-            extent : [extent.xmin, extent.xmax, -extent.ymax, -extent.ymin],
+            // extent : [extent.xmin, extent.xmax, -extent.ymax, -extent.ymin],
+            extent : [ltPoint.x, rtPoint.x, -rtPoint.y, -lbPoint.y],
             u_wind: this._windTexture,
             u_particles: this._particleStateTexture0,
             u_rand_seed: Math.random(),
