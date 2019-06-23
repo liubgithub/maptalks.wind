@@ -31,21 +31,34 @@ vec2 lookup_wind(const vec2 uv) {
     float ymax = (extent.w + 90.0) / 180.0;
     float xWidth = xmax - xmin;
     float yHeight = ymax - ymin;
-    vec2 centerUv = vec2((xmin + xmax) / 2.0, (ymin + ymax) / 2.0);
+    //vec2 centerUv = vec2((xmin + xmax) / 2.0, (ymin + ymax) / 2.0);
+    vec2 centerUv = vec2(0.5, 0.5);
     vec2 v_particle_pos = uv;
     //三象限
     if(v_particle_pos.x < centerUv.x && v_particle_pos.y < centerUv.y) {
         v_particle_pos.x = v_particle_pos.x * xWidth + xmin;
         v_particle_pos.y = v_particle_pos.y * yHeight + ymin;
+        if (v_particle_pos.x < 0.0 || v_particle_pos.x > 1.0) {
+            v_particle_pos.x = 1.0 - fract(v_particle_pos.x);
+        }
     } else if(v_particle_pos.x < centerUv.x && v_particle_pos.y > centerUv.y) {//二象限
         v_particle_pos.x = v_particle_pos.x * xWidth + xmin;
         v_particle_pos.y = (v_particle_pos.y - 1.0) * yHeight + ymax ;
+        if (v_particle_pos.x < 0.0 || v_particle_pos.x > 1.0) {
+            v_particle_pos.x = 1.0 - fract(v_particle_pos.x) + 1.0;
+        }
     } else if(v_particle_pos.x > centerUv.x && v_particle_pos.y < centerUv.y) {//四象限
         v_particle_pos.x = (v_particle_pos.x -  1.0) * xWidth + xmax;
         v_particle_pos.y = v_particle_pos.y * yHeight + ymin;
+        if (v_particle_pos.x < 0.0 || v_particle_pos.x > 1.0) {
+            v_particle_pos.x = fract(v_particle_pos.x);
+        }
     } else if(v_particle_pos.x > centerUv.x && v_particle_pos.y > centerUv.y) {//一象限
         v_particle_pos.x = (v_particle_pos.x -  1.0) * xWidth + xmax;
         v_particle_pos.y = (v_particle_pos.y -  1.0) * yHeight + ymax;
+        if (v_particle_pos.x < 0.0 || v_particle_pos.x > 1.0) {
+            v_particle_pos.x = fract(v_particle_pos.x);
+        }
     }
     vec2 px = 1.0 / u_wind_res;
     // vec2 vc = (floor(uv * u_wind_res)) * px;
