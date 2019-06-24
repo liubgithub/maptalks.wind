@@ -23,6 +23,13 @@ export default class WindLayer extends maptalks.Layer {
             });
         }
     }
+
+    getWindSpeed(coord) {
+        const renderer = this.getRenderer();
+        if (renderer) {
+           return renderer._getSpeed(coord);
+        }
+    }
 }
 WindLayer.mergeOptions(options);
 WindLayer.registerJSONType('WindLayer');

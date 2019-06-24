@@ -20,6 +20,7 @@ const defaultRampColors = {
     0.6: '#f46d43',
     1.0: '#d53e4f'
 };
+
 class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
 
     constructor(layer) {
@@ -92,6 +93,8 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
         this.renderer = new reshader.Renderer(this.regl);
         const width = this.canvas.width;
         const height = this.canvas.height;
+        this._canvasWidth = width;
+        this._canvasHeight = height;
         const emptyPixels = new Uint8Array(width * height * 4);
         this._backgroundTexture = this.regl.texture({
             width,
@@ -159,8 +162,12 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
                 viewport : {
                     x: 0,
                     y: 0,
-                    width : this._particleStateResolution,
-                    height : this._particleStateResolution
+                    width : () => {
+                        return this._particleStateResolution;
+                    },
+                    height :() => {
+                        return this._particleStateResolution;
+                    }
                 },
                 dither: true 
             },
@@ -220,7 +227,28 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
     }
 
     resizeCanvas(size) {
+        if(this._backgroundTexture && this._screenTexture && this._isCanvasResize()) {
+            const width = this.canvas.width;
+            const height = this.canvas.height;
+            const emptyPixels = new Uint8Array(width * height * 4);
+            this._backgroundTexture({
+                width,
+                height,
+                data : emptyPixels
+            });
+            this._screenTexture({
+                width,
+                height,
+                data : emptyPixels
+            });
+            this._canvasWidth = width;
+            this._canvasHeight = height;
+        }
         super.resizeCanvas(size);
+    }
+
+    _isCanvasResize() {
+        return this._canvasWidth != this.canvas.width || this._canvasHeight != this.canvas.height;
     }
 
     _setData(data) {
@@ -361,7 +389,9 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
 
     _getWindScene() {
         const map = this.layer.getMap();
-        const extent = map.getExtent();
+        // const extent = map.getExtent();
+        const extent = this._getMapExtent();
+        // const extent = map._get2DExtent(map.getZoom());
         const lt = coordinateToWorld(map, new maptalks.Coordinate([extent.xmin, extent.ymax]));
         const lb = coordinateToWorld(map, new maptalks.Coordinate(extent.xmin, extent.ymin));
         const rb = coordinateToWorld(map, new maptalks.Coordinate(extent.xmax, extent.ymin));
@@ -416,7 +446,8 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
 
     _drawParticles() {
         const map = this.layer.getMap();
-        const extent = map.getExtent();
+        // const extent = map.getExtent();
+        const extent = this._getMapExtent();
         const particleScene = this._getParticlesScene();
         this.renderer.render(this.drawShader, {
             extent : [extent.xmin, extent.xmax, -extent.ymax, -extent.ymin],
@@ -434,7 +465,8 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
             color: this._particleStateTexture1
         });
         const map = this.layer.getMap();
-        const extent = map.getExtent();
+        // const extent = map.getExtent();
+        const extent = this._getMapExtent();
         const quadScene = this._getQuadScene();
         this.renderer.render(this.updateSHader, {
             extent : [extent.xmin, extent.xmax, -extent.ymax, -extent.ymin],
@@ -463,11 +495,34 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
         this._updateParticles();
     }
 
-    _getCenterPoint() {
+    _getMapExtent() {
         const map = this.layer.getMap();
-        const center = map.getCenter();
-        const point = map.coordinateToViewPoint(center);
-        return point;
+        const extent = map.getExtent();
+        if (extent.xmax < extent.xmin) {
+            extent.xmax = extent.xmax + 360;
+        }
+        return extent;
+    }
+
+    _getSpeed(coordinate) {
+        const t = coordinate.x % 180;
+        const pixelX = (( t + 180) / 360) * this._windData.width;
+        const pixelY = ((90 - coordinate.y) / 180) * this._windData.height;
+        const framebuffer = this.regl.framebuffer({
+            color : this._windTexture,
+            width : this._windData.width,
+            height : this._windData.height
+        });
+        const pixels = this.regl.read({
+            x: pixelX,
+            y: pixelY,
+            width: 1,
+            height: 1,
+            framebuffer
+        });
+        const vx = pixels[0] * (this._windData.uMax - this._windData.uMin) / 255 + this._windData.uMin;
+        const vy = pixels[1] * (this._windData.vMax - this._windData.vMin) / 255 + this._windData.vMin;
+        return [vx, vy];
     }
 
 }
