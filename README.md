@@ -62,17 +62,11 @@ IE 9-11, Chrome, Firefox, other modern and mobile browsers.
 ```javascript
 new maptalks.WindLayer(id, options)
 ```
-'count' : 256 * 256,
-    'fadeOpacity' : 0.996, // how fast the particle trails fade on each frame
-    'speedFactor' : 0.25, // how fast the particles move
-    'dropRate' : 0.003, // how often the particles move to a random place
-    'dropRateBump' : 0.01, // drop rate increase relative to individual particle speed
-    'colors' : defaultRampColors
 * id **String** layer id
 * options **Object** options
-    * count **Number** count of the particles (256 * 256 by default) 
-    * fadeOpacity **Number** how fast the particle trails fade on each frame(0.996 by default)
-    * speedFactor * **Number**  how fast the particles move(0.25 by default)
+    * count **Number**  count of the particles (256 * 256 by default) 
+    * fadeOpacity **Number**  how fast the particle trails fade on each frame(0.996 by default)
+    * speedFactor **Number**  how fast the particles move(0.25 by default)
     * dropRate **Number**   how often the particles move to a random place(0.003 by default)
     * dropRateBump **Number** drop rate increase relative to individual particle speed (0.01 by default)
     * colors  **Object** the color of the particles, it's usually a ramp color
@@ -132,4 +126,4 @@ windlayer.getWindSpeed(coordinate);
 * coordinate **maptalks.Coordinate**
 
 **Returns** `Array`
-* The return value is a length of 2 Array which contains horizontal speed and vertical speed. The negative and positive represents the direction of the wind.
+* The return value is a length of 2 Array which contains horizontal speed and vertical speed. The negative and positive represents the direction of wind.
