@@ -1,8 +1,25 @@
 import * as maptalks from 'maptalks';
 import WindLayerRenderer from './WindLayerRenderer';
 
+const defaultRampColors = {
+    0.0: '#3288bd',
+    0.1: '#66c2a5',
+    0.2: '#abdda4',
+    0.3: '#e6f598',
+    0.4: '#fee08b',
+    0.5: '#fdae61',
+    0.6: '#f46d43',
+    1.0: '#d53e4f'
+};
+
 const options = {
-    'renderer' : 'gl'
+    'renderer' : 'gl',
+    'count' : 256 * 256,
+    'fadeOpacity' : 0.996, // how fast the particle trails fade on each frame
+    'speedFactor' : 0.25, // how fast the particles move
+    'dropRate' : 0.003, // how often the particles move to a random place
+    'dropRateBump' : 0.01, // drop rate increase relative to individual particle speed
+    'colors' : defaultRampColors
 };
 
 export default class WindLayer extends maptalks.Layer {
@@ -14,20 +31,29 @@ export default class WindLayer extends maptalks.Layer {
     }
 
     setWind(windData) {
-        const renderer = this.getRenderer();
-        if (renderer) {
-            renderer._setData(windData);
-        } else {
-            this.on('renderercreate', (e) => {
-                e.renderer._setData(windData);
-            });
-        }
+        this._callRendererMethod('_setData', windData);
+    }
+
+    setParticlesCount(count) {
+        this._callRendererMethod('_setParticlesCount', count);
+    }
+
+    setRampColors(colors) {
+        this._callRendererMethod('_setColorRamp', colors);
     }
 
     getWindSpeed(coord) {
+        return this._callRendererMethod('_getSpeed', coord);
+    }
+
+    _callRendererMethod(func, params) {
         const renderer = this.getRenderer();
         if (renderer) {
-           return renderer._getSpeed(coord);
+            return renderer[func](params);
+        } else {
+            this.on('renderercreate', (e) => {
+                return e.renderer[func](params);
+            });
         }
     }
 }

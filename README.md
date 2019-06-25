@@ -1,24 +1,52 @@
-# mesh-simplify
+# maptalks.wind
 
 ## Usage
 
-```mesh-simplify``` is a plugin used to simplifying mesh's vertices writern in javascript. It references to https://threejs.org/examples/?q=simpli#webgl_modifier_simplifier.
+```maptalks.wind``` is a maptalks layer used to rendering the globle wind data which get from the US National Weather Service publishes weather data for the whole globe, known as GFS. This project is heavily inspired by the work of https://github.com/mapbox/webgl-wind.
 
 ### Vanilla Javascript
 ```html
-<script type="text/javascript" src="../mesh-simplify.js"></script>
+<script type="text/javascript" src="../maptalks.WindLayer.js"></script>
 <script>
-var simplify = new Simplify();
-var simplifyData = simplify.modify(geometry, 0.4);
+var map = new maptalks.Map({});
+
+var windData = {
+    date: "2016-11-20T00:00Z",
+    height: 180,
+    image: '2016112000.png',
+    source: "http://nomads.ncep.noaa.gov",
+    uMax: 26.8,
+    uMin: -21.32,
+    vMax: 21.42,
+    vMin: -21.57,
+    width: 360
+};
+var windlayer = new maptalks.WindLayer('wind', {
+    data : windData
+}).addTo(map);
 </script>
 ```
 
 ### ES6
 
 ```javascript
-import { Simplify } from 'mesh-simplify';
-const simplify = new Simplify();
-const simplifyData = simplify.modify(geometry, 0.4);
+import { WindLayer } from 'maptalks.wind';
+
+const windData = {
+    date: "2016-11-20T00:00Z",
+    height: 180,
+    image: '2016112000.png',
+    source: "http://nomads.ncep.noaa.gov",
+    uMax: 26.8,
+    uMin: -21.32,
+    vMax: 21.42,
+    vMin: -21.57,
+    width: 360
+};
+const windlayer = new WindLayer('wind', {
+    data : windData
+});
+
 ```
 
 ## Supported Browsers
@@ -29,36 +57,79 @@ IE 9-11, Chrome, Firefox, other modern and mobile browsers.
 
 ### `Constructor`
 
-```javascript
-new Simplify({
-    lowerLimit : 17,
-    mergePrecision : 100000,
-    collapseCost : 100000
-})
-```
-* lowerLimit **Number** The least number of vertices will not be simplified
-* percentage **Number**  merge precision,
-* collapseCost **Number** initial collapse cost
-
-### `modify(geometry, percentage)`
-
-modify the geometry data
+```WindLayer``` is a subclass of [maptalks.Layer](https://maptalks.github.io/maptalks.js/api/0.x/Layer.html) and inherits all the methods of its parent.
 
 ```javascript
-simplify.modify(geometry, percentage);
+new maptalks.WindLayer(id, options)
 ```
-* geometry **reshader.geometry** an object like this:
+'count' : 256 * 256,
+    'fadeOpacity' : 0.996, // how fast the particle trails fade on each frame
+    'speedFactor' : 0.25, // how fast the particles move
+    'dropRate' : 0.003, // how often the particles move to a random place
+    'dropRateBump' : 0.01, // drop rate increase relative to individual particle speed
+    'colors' : defaultRampColors
+* id **String** layer id
+* options **Object** options
+    * count **Number** count of the particles (256 * 256 by default) 
+    * fadeOpacity **Number** how fast the particle trails fade on each frame(0.996 by default)
+    * speedFactor * **Number**  how fast the particles move(0.25 by default)
+    * dropRate **Number**   how often the particles move to a random place(0.003 by default)
+    * dropRateBump **Number** drop rate increase relative to individual particle speed (0.01 by default)
+    * colors  **Object** the color of the particles, it's usually a ramp color
+    * data **Object** the wind data, including lookup image, max wind velocity and min wind velocity
+
+### `setWind(data)`
+
+set the wind data for windlayer
+
+```javascript
+windlayer.setWind(data);
+```
+* data **Object** an object like this:
 ```javascript
    {
-        "indices"       : [],
-        "data" : {
-            "POSITION"   : [],
-            "NORMAL"     : [],
-            "TEXCOORD"   : []
-        }
-   }
+        height: 180,
+        image: '2016112000.png',
+        uMax: 26.8,
+        uMin: -21.32,
+        vMax: 21.42,
+        vMin: -21.57,
+        width: 360
+    }
 ```
-* percentage **Number** a number between 0 an 1.0, which indicates how many vertices will be simplified
+### `setParticlesCount(count)`
 
-**Returns** `Object`
-* The return value is an Object which contains 'POSITION','NORMAL','TEXCOORD_0' and 'indices'
+set the count of particles
+```javascript
+windlayer.setParticlesCount(count);
+```
+* count **Number** the count of the particles in layer
+
+### `setRampColors(colors)`
+
+set the ramp color for rendering particles
+```javascript
+windlayer.setRampColors(colors);
+```
+* colors **Object** a ramp color object, the structure like this:
+```javascript
+    {
+        0.0: '#3288bd',
+        0.1: '#66c2a5',
+        0.2: '#abdda4',
+        0.3: '#e6f598',
+        0.4: '#fee08b',
+        0.5: '#fdae61',
+        0.6: '#f46d43',
+        1.0: '#d53e4f'
+    }
+```
+### `getWindSpeed(coordinate)`
+get the wind speed on specified location
+```javascript
+windlayer.getWindSpeed(coordinate);
+```
+* coordinate **maptalks.Coordinate**
+
+**Returns** `Array`
+* The return value is a length of 2 Array which contains horizontal speed and vertical speed. The negative and positive represents the direction of the wind.

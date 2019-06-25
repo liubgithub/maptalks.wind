@@ -1,4 +1,4 @@
-export default `precision highp float;
+precision highp float;
 
 uniform sampler2D u_particles;
 uniform sampler2D u_wind;
@@ -28,20 +28,19 @@ vec2 getNewUV(vec2 uv) {
     float ymax = (extent.w + 90.0) / 180.0;
     float xWidth = xmax - xmin;
     float yHeight = ymax - ymin;
-    //vec2 centerUv = vec2((xmin + xmax) / 2.0, (ymin + ymax) / 2.0);
     vec2 centerUv = vec2(0.5, 0.5);
     vec2 v_particle_pos = uv;
-    //三象限
+
     if(v_particle_pos.x < centerUv.x && v_particle_pos.y < centerUv.y) {
         v_particle_pos.x = v_particle_pos.x * xWidth + xmin;
         v_particle_pos.y = v_particle_pos.y * yHeight + ymin;
-    } else if(v_particle_pos.x < centerUv.x && v_particle_pos.y > centerUv.y) {//二象限
+    } else if(v_particle_pos.x < centerUv.x && v_particle_pos.y > centerUv.y) {
         v_particle_pos.x = v_particle_pos.x * xWidth + xmin;
         v_particle_pos.y = (v_particle_pos.y - 1.0) * yHeight + ymax ;
-    } else if(v_particle_pos.x > centerUv.x && v_particle_pos.y < centerUv.y) {//四象限
+    } else if(v_particle_pos.x > centerUv.x && v_particle_pos.y < centerUv.y) {
         v_particle_pos.x = (v_particle_pos.x -  1.0) * xWidth + xmax;
         v_particle_pos.y = v_particle_pos.y * yHeight + ymin;
-    } else if(v_particle_pos.x > centerUv.x && v_particle_pos.y > centerUv.y) {//一象限
+    } else if(v_particle_pos.x > centerUv.x && v_particle_pos.y > centerUv.y) {
         v_particle_pos.x = (v_particle_pos.x -  1.0) * xWidth + xmax;
         v_particle_pos.y = (v_particle_pos.y -  1.0) * yHeight + ymax;
     }
@@ -81,7 +80,7 @@ void main() {
         float speed_t = length(velocity) / length(u_wind_max);
     
         // take EPSG:4236 distortion into account for calculating where the particle moved
-        float distortion = cos(radians(pos.y * 180.0 - 90.0));
+        float distortion = cos(radians(newUV.y * 180.0 - 90.0));
         vec2 offset = vec2(velocity.x / distortion, -velocity.y) * 0.0001 * u_speed_factor;
     
         // update particle position, wrapping around the date line
@@ -104,4 +103,4 @@ void main() {
             fract(pos * 255.0),
             floor(pos * 255.0) / 255.0);
     // }
-}`;
+}
