@@ -1,3 +1,8 @@
+/**
+ * There are many rendering methods and glsl code
+ * based on project finished by @mourner https://github.com/mourner 
+ * and his project is here https://github.com/mapbox/webgl-wind.
+ */
 import * as maptalks from 'maptalks';
 import { createREGL, mat4, reshader } from '@maptalks/gl';
 import drawVert from './glsl/draw.vert';
