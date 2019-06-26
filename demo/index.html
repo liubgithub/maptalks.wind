@@ -5,6 +5,8 @@
 <title>wind layer</title>
 <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.css">
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/maptalks/dist/maptalks.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.6.2/dat.gui.min.js"></script>
+<script type="text/javascript" src="../demo/data/windData.js"></script>
 <style type="text/css">
     html,
     body {
@@ -20,16 +22,16 @@
     }
 </style>
 <script src="js/maptalksgl-dev.js" type="text/javascript"></script>
-<script src="../dist/maptalks.WindLayer-dev.js"></script>
+<script src="../dist/maptalks.wind-dev.js"></script>
 
 <body>
     <div id="map"></div>
     <script>
         const { createREGL, mat4, reshader } = maptalksgl;
         var map = new maptalks.Map('map', {
-            center: [114, 20],
-            zoom: 5,
-            minZoom: 4,
+            center: [0, 20],
+            zoom: 4,
+            minZoom: 3,
             maxZoom: 18,
             // pitch : 45,
             spatialReference: {
@@ -46,36 +48,17 @@
             })
         });
 
-        // var map = new maptalks.Map('map', {
-        //     center : [114, 20],
-        //     minZoom : 3,
-        //     zoom: 4,
-        //     maxZoom : 18,
-        //     baseLayer : new maptalks.TileLayer('tile',{
-        //         'urlTemplate' : 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png',
-        //         'subdomains'  : ['a','b','c','d']
-        //     })
-        // });
-        const windData = {
-            date: "2016-11-20T00:00Z",
-            height: 180,
-            image: '2016112000.png',
-            source: "http://nomads.ncep.noaa.gov",
-            uMax: 26.8,
-            uMin: -21.32,
-            vMax: 21.42,
-            vMin: -21.57,
-            width: 360
-        };
-        const windLayer = new maptalks.WindLayer('wind', { data : windData }).addTo(map);
-        map.on('zoomend', function(e) {
+        const data = windData['2016112000'];
+        data.image = 'data/2016112000.png';
+        const windLayer = new maptalks.WindLayer('wind', { data }).addTo(map);
+        map.on('zoomend', function (e) {
             const zoom = map.getZoom();
             const ratio = Math.max(1, zoom - map.getMinZoom());
             windLayer.setParticlesCount(256 * 256 / ratio);
         });
         const tooltip = new maptalks.ui.InfoWindow({
-            autoPan : false,
-            dy : -5
+            autoPan: false,
+            dy: -5
         }).addTo(map);
         map.on('mousemove', e => {
             const windSpeed = windLayer.getWindSpeed(e.coordinate);
@@ -84,6 +67,72 @@
             tooltip.setContent(content);
             tooltip.show(e.coordinate);
         });
+
+        AddGUI();
+        //创建dat.gui控件
+        function AddGUI() {
+            const gui = new dat.GUI({ width: 250 });
+            const windFiles = [
+                '2016111999',
+                '2016112000',
+                '2016112006',
+                '2016112012',
+                '2016112018',
+                '2016112100',
+                '2016112106',
+                '2016112112',
+                '2016112118',
+                '2016112200'
+            ];
+            const Config = function () {
+                this.windData = '2016112000';
+                this.count = 256 * 256;
+                this.fadeOpacity = 0.996;
+                this.speedFactor = 0.25;
+                this.dropRate = 0.003;
+                this.dropRateBump = 0.01;
+            }
+            var options = new Config();
+            var countControl = gui.add(options, 'count', 2500, 512 * 512);
+            countControl.onChange(function (value) {
+                windLayer.setParticlesCount(value);
+            });
+
+            var fadeControl = gui.add(options, 'fadeOpacity', 0.1, 1.000);
+            fadeControl.onChange(function (value) {
+                windLayer.config({
+                    fadeOpacity: value
+                });
+            });
+
+            var speedFactorControl = gui.add(options, 'speedFactor', 0, 1.0);
+            speedFactorControl.onChange(function (value) {
+                windLayer.config({
+                    speedFactor: value
+                });
+            });
+
+            var dropRateControl = gui.add(options, 'dropRate', 0.001, 0.1);
+            dropRateControl.onChange(function (value) {
+                windLayer.config({
+                    dropRate: value
+                });
+            });
+
+            var dropRateBumpControl = gui.add(options, 'dropRateBump', 0.001, 0.1);
+            dropRateBumpControl.onChange(function (value) {
+                windLayer.config({
+                    dropRateBump: value
+                });
+            });
+
+            var dataController = gui.add(options, 'windData', windFiles);
+            dataController.onChange(function (value) {
+                const data = windData[value];
+                data.image = `data/${value}.png`;
+                windLayer.setWind(data);
+            });
+        }
     </script>
 </body>
 

@@ -73,9 +73,9 @@ void main() {
         color.r / 255.0 + color.b,
         color.g / 255.0 + color.a); // decode particle position from pixel RGBA
     vec2 newUV = getNewUV(pos);
-    // if (newUV.y < 0.0 || newUV.y > 1.0) {
-    //     gl_FragColor = vec4(0.0);
-    // } else {
+    if (newUV.y < 0.0 || newUV.y > 1.0) {
+        gl_FragColor = vec4(0.0);
+    } else {
         vec2 velocity = mix(u_wind_min, u_wind_max, lookup_wind(newUV));
         float speed_t = length(velocity) / length(u_wind_max);
     
@@ -102,5 +102,5 @@ void main() {
         gl_FragColor = vec4(
             fract(pos * 255.0),
             floor(pos * 255.0) / 255.0);
-    // }
+    }
 }

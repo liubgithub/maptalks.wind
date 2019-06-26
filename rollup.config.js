@@ -6,7 +6,7 @@ const terser = require('rollup-plugin-terser').terser;
 const pkg = require('./package.json');
 
 const production = process.env.BUILD === 'production';
-const outputFile = production ? 'dist/maptalks.WindLayer.js' : 'dist/maptalks.WindLayer-dev.js';
+const outputFile = production ? 'dist/maptalks.wind.js' : 'dist/maptalks.wind-dev.js';
 const plugins = production ? [
     uglify({
         output : { comments : '/^!/' },

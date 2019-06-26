@@ -15,10 +15,10 @@ const defaultRampColors = {
 const options = {
     'renderer' : 'gl',
     'count' : 256 * 256,
-    'fadeOpacity' : 0.996, // how fast the particle trails fade on each frame
-    'speedFactor' : 0.25, // how fast the particles move
-    'dropRate' : 0.003, // how often the particles move to a random place
-    'dropRateBump' : 0.01, // drop rate increase relative to individual particle speed
+    'fadeOpacity' : 0.996,
+    'speedFactor' : 0.25,
+    'dropRate' : 0.003,
+    'dropRateBump' : 0.01,
     'colors' : defaultRampColors
 };
 
@@ -36,6 +36,10 @@ export default class WindLayer extends maptalks.Layer {
 
     setParticlesCount(count) {
         this._callRendererMethod('_setParticlesCount', count);
+    }
+
+    getParticlesCount() {
+        return this._callRendererMethod('_getParticlesCount');
     }
 
     setRampColors(colors) {

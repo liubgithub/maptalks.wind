@@ -1,19 +1,19 @@
 {
-  "name": "@maptalks/wind-layer",
+  "name": "maptalks.wind",
   "version": "0.1.1",
   "description": "A maptalks Layer to render gltf",
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
-    "url": "https://github.com/maptalks/maptalks.WindLayer.git"
+    "url": "https://github.com/liubgithub/maptalks.wind.git"
   },
-  "main": "dist/maptalks.WindLayer.js",
-  "browser": "dist/maptalks.WindLayer.js",
-  "module": "dist/maptalks.WindLayer.es.js",
-  "jsnext:main": "dist/maptalks.WindLayer.es.js",
+  "main": "dist/maptalks.wind.js",
+  "browser": "dist/maptalks.wind.js",
+  "module": "dist/maptalks.wind.es.js",
+  "jsnext:main": "dist/maptalks.wind.es.js",
   "files": [
-    "dist/maptalks.WindLayer.js",
-    "dist/maptalks.WindLayer.es.js"
+    "dist/maptalks.wind.js",
+    "dist/maptalks.wind.es.js"
   ],
   "scripts": {
     "dev": "rollup -w -c rollup.config.js",

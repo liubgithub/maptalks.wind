@@ -6,19 +6,21 @@ module.exports = function (config) {
         basePath: '.',
         client: {
             mocha: {
-                timeout : 10000
+                timeout : 6000
             }
         },
         files: [
+            'node_modules/maptalks/dist/maptalks.js',
+            'node_modules/@maptalks/gl/dist/maptalksgl.js',
             'dist/maptalks.wind-dev.js',
             'test/**/*.js',
             {
-                pattern: 'test/models/**/*',
+                pattern: 'test/data/**/*',
                 included: false
             }
         ],
         proxies: {
-            '/models/': '/base/test/models/'
+            '/data/': '/base/test/data/'
         },
         preprocessors: {
         },

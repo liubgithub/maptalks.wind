@@ -14,11 +14,7 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
 
     constructor(layer) {
         super(layer);
-        this._fadeOpacity = this.layer.options.fadeOpacity; // how fast the particle trails fade on each frame
-        this._speedFactor = this.layer.options.speedFactor; // how fast the particles move
-        this._dropRate = this.layer.options.dropRate; // how often the particles move to a random place
-        this._dropRateBump = this.layer.options.dropRateBump; // drop rate increase relative to individual particle speed
-        this._rampColors = this.layer.options.colors;
+        this._updateParams();
         this._windData = {};
     }
 
@@ -67,7 +63,6 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
             ],
             optionalExtensions : this.layer.options['glExtensions'] || []
         });
-        this._setParticlesCount(this.layer.options.count);
         this._initRenderer();
     }
 
@@ -83,12 +78,22 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
         super.clearCanvas();
     }
 
+    _updateParams() {
+        this._particlesCount = this.layer.options.count;
+        this._fadeOpacity = this.layer.options.fadeOpacity;
+        this._speedFactor = this.layer.options.speedFactor;
+        this._dropRate = this.layer.options.dropRate;
+        this._dropRateBump = this.layer.options.dropRateBump;
+        this._rampColors = this.layer.options.colors;
+    }
+
     _initRenderer() {
         this.renderer = new reshader.Renderer(this.regl);
         const width = this.canvas.width;
         const height = this.canvas.height;
         this._canvasWidth = width;
         this._canvasHeight = height;
+        this._prepareParticles();
         this._prepareTexture();
         this._prepareShader();
         this._setColorRamp(this._rampColors);
@@ -125,10 +130,11 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
         //if image is src
         if (maptalks.Util.isString(this._windData.image)) {
             const image = new Image();
-            image.src = windData.image;
+            image.src = this._windData.image;
             image.onload = () => {
                 this._windData.image = image;
                 this._createWindTexture();
+                this.layer.fire('windtexture-create-debug');
             }
         } else {
             this._createWindTexture();
@@ -144,6 +150,34 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
             mag: 'linear',
             min: 'linear'
         });
+    }
+
+    _prepareParticles() {
+        const particleRes = this._particleStateResolution = Math.ceil(Math.sqrt(this._particlesCount));
+        this._numParticles = particleRes * particleRes;
+        const particleState = new Uint8Array(this._numParticles * 4);
+        for (let i = 0; i < particleState.length; i++) {
+            particleState[i] = Math.floor(Math.random() * 256); // randomize the initial particle positions
+        }
+        if (!this.regl) {
+            return;
+        }
+        // textures to hold the particle state for the current and the next frame
+        this._particleStateTexture0 = this.regl.texture({
+            data : particleState,
+            width : particleRes,
+            height : particleRes
+        });
+        this._particleStateTexture1 = this.regl.texture({
+            data : particleState,
+            width : particleRes,
+            height : particleRes
+        });
+
+        this._particleIndices = new Float32Array(this._numParticles);
+        for (let i = 0; i < this._numParticles; i++) {
+            this._particleIndices[i] = i;
+        }
     }
 
     _prepareShader() {
@@ -282,36 +316,17 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
 
     _setData(data) {
         this._windData = data;
-        if (!this._windTexture) {
-            this._prepareWindTexture();
-        }
+        this._prepareWindTexture();
     }
 
     _setParticlesCount(count) {
         // we create a square texture where each pixel will hold a particle position encoded as RGBA
-        const particleRes = this._particleStateResolution = Math.ceil(Math.sqrt(count));
-        this._numParticles = particleRes * particleRes;
+        this._particlesCount = count;
+        this._prepareParticles();
+    }
 
-        const particleState = new Uint8Array(this._numParticles * 4);
-        for (let i = 0; i < particleState.length; i++) {
-            particleState[i] = Math.floor(Math.random() * 256); // randomize the initial particle positions
-        }
-        // textures to hold the particle state for the current and the next frame
-        this._particleStateTexture0 = this.regl.texture({
-            data : particleState,
-            width : particleRes,
-            height : particleRes
-        });
-        this._particleStateTexture1 = this.regl.texture({
-            data : particleState,
-            width : particleRes,
-            height : particleRes
-        });
-
-        this._particleIndices = new Float32Array(this._numParticles);
-        for (let i = 0; i < this._numParticles; i++) {
-            this._particleIndices[i] = i;
-        }
+    _getParticlesCount() {
+        return this._particlesCount;
     }
 
     _setColorRamp(colors) {
@@ -462,6 +477,7 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
         if (!this._screenTexture ||!this._backgroundTexture || !this._windTexture) {
             return;
         }
+        this._updateParams();
         this._drawScreen();
         this._updateParticles();
     }
@@ -476,8 +492,14 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
     }
 
     _getSpeed(coordinate) {
+        if (!this.regl) {
+            return;
+        }
         const t = coordinate.x % 180;
         const pixelX = (( t + 180) / 360) * this._windData.width;
+        if (coordinate.y < -90 || coordinate.y > 90) {
+            throw new Error('Invalid y for coordinate');
+        }
         const pixelY = ((90 - coordinate.y) / 180) * this._windData.height;
         const framebuffer = this.regl.framebuffer({
             color : this._windTexture,

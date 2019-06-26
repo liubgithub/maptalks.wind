@@ -4,9 +4,21 @@
 
 ```maptalks.wind``` is a maptalks layer used to rendering the globle wind data which get from the US National Weather Service publishes weather data for the whole globe, known as GFS. This project is heavily inspired by the work of https://github.com/mapbox/webgl-wind.
 
+![screenshot](https://user-images.githubusercontent.com/5208386/60158728-4bd4e980-9824-11e9-93dd-1d20c99f32ee.png)
+
+## Examples
+
+* A windlayer for the whole globe at 2016-11-20T00:00Z [demo](https://maptalks.github.io/maptalks.heatmap/demo/). (data from [US National Weather Service]("http://nomads.ncep.noaa.gov)).
+
+## Install
+  
+* Install with npm: ```npm install maptalks.wind```. 
+* Download from [dist directory](https://github.com/liubgithub/maptalks.wind/dist).
+* Use unpkg CDN: ```https://unpkg.com/maptalks.wind/dist/maptalks.heatmap.min.js```
+
 ### Vanilla Javascript
 ```html
-<script type="text/javascript" src="../maptalks.WindLayer.js"></script>
+<script type="text/javascript" src="../maptalks.wind.js"></script>
 <script>
 var map = new maptalks.Map({});
 
@@ -79,7 +91,7 @@ set the wind data for windlayer
 ```javascript
 windlayer.setWind(data);
 ```
-* data **Object** an object like this:
+* data **Object**. It's an object like this:
 ```javascript
    {
         height: 180,
@@ -93,11 +105,16 @@ windlayer.setWind(data);
 ```
 ### `setParticlesCount(count)`
 
-set the count of particles
+set the count for particles
 ```javascript
 windlayer.setParticlesCount(count);
 ```
 * count **Number** the count of the particles in layer
+### `getParticlesCount()`
+
+get the count of particles for windlayer
+**Returns** `Number`
+* The count of particles.
 
 ### `setRampColors(colors)`
 
@@ -126,4 +143,4 @@ windlayer.getWindSpeed(coordinate);
 * coordinate **maptalks.Coordinate**
 
 **Returns** `Array`
-* The return value is a length of 2 Array which contains horizontal speed and vertical speed. The negative and positive represents the direction of wind.
+* The return value is a length of 2 Array which contains horizontal speed and vertical speed. The negative and positive of the value represent the direction of wind.
