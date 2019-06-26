@@ -13,8 +13,8 @@
 ## Install
   
 * Install with npm: ```npm install maptalks.wind```. 
-* Download from [dist directory](https://github.com/liubgithub/maptalks.wind/dist).
-* Use unpkg CDN: ```https://unpkg.com/maptalks.wind/dist/maptalks.wind.min.js```
+* Download from [dist directory](https://github.com/liubgithub/maptalks.wind/dist/).
+* Use unpkg CDN: ```https://unpkg.com/maptalks.wind/dist/maptalks.wind.js```
 
 ### Vanilla Javascript
 ```html
