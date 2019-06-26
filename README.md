@@ -1,5 +1,5 @@
 # maptalks.wind
-
+[![NPM Version](https://img.shields.io/npm/v/maptalks.wind.svg)](https://github.com/maptalks/maptalks.snapto)
 ## Usage
 
 ```maptalks.wind``` is a maptalks layer used to rendering the globle wind data which get from the US National Weather Service publishes weather data for the whole globe, known as GFS. This project is heavily inspired by the work of https://github.com/mapbox/webgl-wind.
@@ -8,13 +8,13 @@
 
 ## Examples
 
-* A windlayer for the whole globe at 2016-11-20T00:00Z [demo](https://maptalks.github.io/maptalks.heatmap/demo/). (data from [US National Weather Service]("http://nomads.ncep.noaa.gov)).
+* A windlayer for the whole globe at 2016-11-20T00:00Z [demo](https://github.com/liubgithub/maptalks.wind/demo/). (data from [US National Weather Service](http://nomads.ncep.noaa.gov)).
 
 ## Install
   
 * Install with npm: ```npm install maptalks.wind```. 
 * Download from [dist directory](https://github.com/liubgithub/maptalks.wind/dist).
-* Use unpkg CDN: ```https://unpkg.com/maptalks.wind/dist/maptalks.heatmap.min.js```
+* Use unpkg CDN: ```https://unpkg.com/maptalks.wind/dist/maptalks.wind.min.js```
 
 ### Vanilla Javascript
 ```html
@@ -113,6 +113,9 @@ windlayer.setParticlesCount(count);
 ### `getParticlesCount()`
 
 get the count of particles for windlayer
+```javascript
+windlayer.getParticlesCount();
+```
 **Returns** `Number`
 * The count of particles.
 
@@ -144,3 +147,22 @@ windlayer.getWindSpeed(coordinate);
 
 **Returns** `Array`
 * The return value is a length of 2 Array which contains horizontal speed and vertical speed. The negative and positive of the value represent the direction of wind.
+
+## Develop
+It is written in ES6, transpiled by [babel](https://babeljs.io/) and tested with [mocha](https://mochajs.org) and [expect.js](https://github.com/Automattic/expect.js).
+* Install dependencies
+```shell
+$ npm install
+```
+* dev
+```shell
+$ npm run dev
+```
+* build
+```shell
+$ npm run build
+```
+* test
+```shell
+$ npm run test
+```

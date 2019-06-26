@@ -62,6 +62,10 @@
         }).addTo(map);
         map.on('mousemove', e => {
             const windSpeed = windLayer.getWindSpeed(e.coordinate);
+            if (!windSpeed) {
+                tooltip.hide();
+                return;
+            }
             const content = `<p>水平风速: ${windSpeed[0].toFixed(2)} m/s</p>
                              <p>垂直风速: ${windSpeed[1].toFixed(2)} m/s</p>`;
             tooltip.setContent(content);
