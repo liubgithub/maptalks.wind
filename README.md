@@ -1,5 +1,5 @@
 # maptalks.wind
-[![NPM Version](https://img.shields.io/npm/v/maptalks.wind.svg)](https://github.com/maptalks/maptalks.snapto)
+[![NPM Version](https://img.shields.io/npm/v/maptalks.wind.svg)](https://github.com/liubgithub/maptalks.wind)
 ## Usage
 
 ```maptalks.wind``` is a maptalks layer used to rendering the globle wind data which get from the US National Weather Service publishes weather data for the whole globe, known as GFS. This project is heavily inspired by the work of https://github.com/mapbox/webgl-wind.
