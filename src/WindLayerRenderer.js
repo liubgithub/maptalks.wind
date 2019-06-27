@@ -54,9 +54,6 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
             this.glOptions = attributes;
             this.gl = this.gl || this._createGLContext(this.canvas, attributes);
         }
-        const size = this.layer.getMap().getSize();
-        this.canvas.width = size.width * 2.0;
-        this.canvas.height = size.height * 2.0;
         this.regl = createREGL({
             gl : this.gl,
             extensions : [
@@ -94,14 +91,14 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
 
     _initRenderer() {
         this.renderer = new reshader.Renderer(this.regl);
-        const width = this.canvas.width;
-        const height = this.canvas.height;
+        const width = this.canvas.width || 1;
+        const height = this.canvas.height || 1;
         this._canvasWidth = width;
         this._canvasHeight = height;
         this._prepareParticles();
         this._prepareTexture();
         this._prepareShader();
-        this._setColorRamp(this._rampColors);
+        this.setColorRamp(this._rampColors);
         this._framebuffer = this.regl.framebuffer({
             color: this.regl.texture({
                 width,
@@ -113,8 +110,8 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
     }
 
     _prepareTexture() {
-        const width = this.canvas.width;
-        const height = this.canvas.height;
+        const width = this.canvas.width || 1;
+        const height = this.canvas.height || 1;
         const emptyPixels = new Uint8Array(width * height * 4);
         this._backgroundTexture = this.regl.texture({
             width,
@@ -319,22 +316,22 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
         return this._canvasWidth != this.canvas.width || this._canvasHeight != this.canvas.height;
     }
 
-    _setData(data) {
+    setData(data) {
         this._windData = data;
         this._prepareWindTexture();
     }
 
-    _setParticlesCount(count) {
+    setParticlesCount(count) {
         // we create a square texture where each pixel will hold a particle position encoded as RGBA
         this._particlesCount = count;
         this._prepareParticles();
     }
 
-    _getParticlesCount() {
+    getParticlesCount() {
         return this._particlesCount;
     }
 
-    _setColorRamp(colors) {
+    setColorRamp(colors) {
         // lookup texture for colorizing the particles according to their speed
         this._colorRampTexture = this.regl.texture({
             width : 16,
@@ -420,6 +417,7 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
     }
 
     _drawScreen() {
+        const map = this.layer.getMap();
         this._framebuffer({
             color : this._screenTexture
         });
@@ -496,7 +494,7 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
         return extent;
     }
 
-    _getSpeed(coordinate) {
+    getSpeed(coordinate) {
         if (!this.regl) {
             return;
         }

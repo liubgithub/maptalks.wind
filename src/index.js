@@ -22,7 +22,7 @@ const options = {
     'colors' : defaultRampColors
 };
 
-export default class WindLayer extends maptalks.Layer {
+export class WindLayer extends maptalks.Layer {
     constructor(id, options) {
         super(id, options);
         if (this.options.data) {
@@ -31,23 +31,23 @@ export default class WindLayer extends maptalks.Layer {
     }
 
     setWind(windData) {
-        this._callRendererMethod('_setData', windData);
+        this._callRendererMethod('setData', windData);
     }
 
     setParticlesCount(count) {
-        this._callRendererMethod('_setParticlesCount', count);
+        this._callRendererMethod('setParticlesCount', count);
     }
 
     getParticlesCount() {
-        return this._callRendererMethod('_getParticlesCount');
+        return this._callRendererMethod('getParticlesCount');
     }
 
     setRampColors(colors) {
-        this._callRendererMethod('_setColorRamp', colors);
+        this._callRendererMethod('setColorRamp', colors);
     }
 
     getWindSpeed(coord) {
-        return this._callRendererMethod('_getSpeed', coord);
+        return this._callRendererMethod('getSpeed', coord);
     }
 
     _callRendererMethod(func, params) {

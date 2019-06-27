@@ -64,7 +64,7 @@ module.exports = [
         output: {
             'sourcemap': production ? false : 'inline',
             'format': 'umd',
-            'name': 'maptalks.WindLayer',
+            'name': 'maptalks',
             'banner': banner,
             'outro' : outro,
             'extend' : true,
