@@ -7,9 +7,7 @@ import * as maptalks from 'maptalks';
 import { createREGL, mat4, reshader } from '@maptalks/gl';
 import drawVert from './glsl/draw.vert';
 import drawFrag from './glsl/draw.frag';
-
 import quadVert from './glsl/quad.vert';
-
 import screenFrag from './glsl/screen.frag';
 import updateFrag from './glsl/update.frag';
 import windVert from './glsl/wind.vert';
@@ -129,12 +127,20 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
     }
     
     _prepareWindTexture() {
-        //if image is src
-        if (maptalks.Util.isString(this._windData.image)) {
+        //if gfs data
+        if (maptalks.Util.isString(this._windData) && this._windData.indexOf('.json') > -1) {
+            maptalks.Ajax.get(this._windData, (err, data) => {
+                if (err) {
+                    throw new Error(err);
+                }
+                this._windData = this._resolveGFS(JSON.parse(data));
+                this._createWindTexture();
+            })
+        } else if (maptalks.Util.isString(this._windData.data)) { //if image src
             const image = new Image();
-            image.src = this._windData.image;
+            image.src = this._windData.data;
             image.onload = () => {
-                this._windData.image = image;
+                this._windData.data = image;
                 this._createWindTexture();
                 this.layer.fire('windtexture-create-debug');
             }
@@ -144,11 +150,13 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
     }
 
     _createWindTexture() {
-        if (!this._windData.image) {
+        if (!this._windData.data) {
             return;
         }
         this._windTexture = this.regl.texture({
-            data : this._windData.image,
+            width : this._windData.width,
+            height : this._windData.height,
+            data : this._windData.data,
             mag: 'linear',
             min: 'linear'
         });
@@ -274,7 +282,34 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
             defines: {}
         });
     }
-
+    
+    _resolveGFS(gfsData) {
+        const uData = gfsData[0];
+        const vData = gfsData[1];
+        const uMin = Math.min.apply(null, uData.data);
+        const uMax = Math.max.apply(null, uData.data);
+        const vMin = Math.min.apply(null, vData.data);
+        const vMax = Math.max.apply(null, vData.data);
+        const velocityData = [];
+        for (let i = 0;i < uData.data.length;i++) {
+            const r = Math.floor(255 * (uData.data[i] - uMin) / (uMax - uMin));
+            velocityData.push(r);
+            const g = Math.floor(255 * (vData.data[i] - vMin) / (vMax - vMin));
+            velocityData.push(g);
+            velocityData.push(0);
+            velocityData.push(255);
+        }
+        return {
+            "date" : uData.meta.date,
+            "width": uData.header.nx,
+            "height": uData.header.ny,
+            "uMin": uMin,
+            "uMax": uMax,
+            "vMin": vMin,
+            "vMax": vMax,
+            "data" : velocityData
+        }
+    }
     _createGLContext(canvas, options) {
         const names = ['webgl', 'experimental-webgl'];
         let context = null;
@@ -318,7 +353,9 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
 
     setData(data) {
         this._windData = data;
-        this._prepareWindTexture();
+        if (this.regl) {
+            this._prepareWindTexture();
+        }
     }
 
     setParticlesCount(count) {
