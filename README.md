@@ -61,7 +61,15 @@ const windlayer = new WindLayer('wind', {
 });
 
 ```
+### support for GFS data
+```javascript
+import { WindLayer } from 'maptalks.wind';
 
+const windlayer = new WindLayer('wind', {
+    data : '../path/gfs.json'
+});
+
+```
 ## Supported Browsers
 
 IE 9-11, Chrome, Firefox, other modern and mobile browsers.
@@ -83,7 +91,7 @@ new maptalks.WindLayer(id, options)
     * dropRate **Number**   how often the particles move to a random place(0.003 by default)
     * dropRateBump **Number** drop rate increase relative to individual particle speed (0.01 by default)
     * colors  **Object** the color of the particles, it's usually a ramp color
-    * data **Object** the wind data, including lookup image, max wind velocity and min wind velocity
+    * data **Object**  if your wind data is a lookup table image, it should includ lookup image, max wind velocity and min wind velocity, and if you wind data is a GFS json, it should be a json file path.
 
 ### `setWind(data)`
 
