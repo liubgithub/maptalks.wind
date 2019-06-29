@@ -9,6 +9,7 @@
 ## Examples
 
 * A windlayer for the whole globe at 2016-11-20T00:00Z [demo](https://liubgithub.github.io/maptalks.wind/demo/). (data from [US National Weather Service](http://nomads.ncep.noaa.gov)).
+* support for GFS data [gfs](https://liubgithub.github.io/maptalks.wind/demo/gfs.html).
 
 ## Install
   
