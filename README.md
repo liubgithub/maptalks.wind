@@ -69,6 +69,13 @@ const windlayer = new WindLayer('wind', {
     data : '../path/gfs.json'
 });
 
+OR
+
+const windData = {...};
+const windlayer = new WindLayer('wind', {
+    data : windData
+});
+
 ```
 ## Supported Browsers
 

@@ -136,6 +136,9 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
                 this._windData = this._resolveGFS(JSON.parse(data));
                 this._createWindTexture();
             })
+        } else if (this.isGFSObject()) {
+            this._windData = this._resolveGFS(this._windData);
+            this._createWindTexture();
         } else if (maptalks.Util.isString(this._windData.data)) { //if image src
             const image = new Image();
             image.src = this._windData.data;
@@ -160,6 +163,13 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
             mag: 'linear',
             min: 'linear'
         });
+    }
+
+    isGFSObject() {
+        if (this._windData[0].header && typeof this._windData[0].header === 'object') {
+           return true;
+        }
+        return false;
     }
 
     _prepareParticles() {
@@ -532,7 +542,7 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
     }
 
     getSpeed(coordinate) {
-        if (!this.regl) {
+        if (!this.regl || !this._windData || !this._windData.width) {
             return;
         }
         const t = coordinate.x % 180;
