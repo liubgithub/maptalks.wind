@@ -139,11 +139,11 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
         } else if (this.isGFSObject()) {
             this._windData = this._resolveGFS(this._windData);
             this._createWindTexture();
-        } else if (maptalks.Util.isString(this._windData.data)) { //if image src
+        } else if (maptalks.Util.isString(this._windData.image)) { //if image src
             const image = new Image();
-            image.src = this._windData.data;
+            image.src = this._windData.image;
             image.onload = () => {
-                this._windData.data = image;
+                this._windData.image = image;
                 this._createWindTexture();
                 this.layer.fire('windtexture-create-debug');
             }
@@ -153,20 +153,20 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
     }
 
     _createWindTexture() {
-        if (!this._windData.data) {
+        if (!this._windData) {
             return;
         }
         this._windTexture = this.regl.texture({
             width : this._windData.width,
             height : this._windData.height,
-            data : this._windData.data,
+            data : this._windData.image,
             mag: 'linear',
             min: 'linear'
         });
     }
 
     isGFSObject() {
-        if (this._windData[0].header && typeof this._windData[0].header === 'object') {
+        if (this._windData[0] && this._windData[0].header && typeof this._windData[0].header === 'object') {
            return true;
         }
         return false;
@@ -221,7 +221,12 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
                 'u_color_ramp',
                 'u_particles_res',
                 'u_wind_min',
-                'u_wind_max'
+                'u_wind_max',
+                'full_width',
+                'full_height',
+                'full_extent',
+                'dx',
+                'dy'
             ],
             extraCommandProps : { viewport },
             defines : {}
@@ -253,7 +258,12 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
                 'u_wind_max',
                 'u_speed_factor',
                 'u_drop_rate',
-                'u_drop_rate_bump'
+                'u_drop_rate_bump',
+                'full_width',
+                'full_height',
+                'full_extent',
+                'dx',
+                'dy'
             ],
             extraCommandProps : { 
                 viewport : {
@@ -310,15 +320,17 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
             velocityData.push(255);
         }
         return {
-            "date" : uData.meta.date,
-            "width": uData.header.nx,
-            "height": uData.header.ny,
-            "uMin": uMin,
-            "uMax": uMax,
-            "vMin": vMin,
-            "vMax": vMax,
-            "data" : velocityData
-        }
+            'width': uData.header.nx,
+            'height': uData.header.ny,
+            'uMin': uMin,
+            'uMax': uMax,
+            'vMin': vMin,
+            'vMax': vMax,
+            'image' : velocityData,
+            'full_extent' : [uData.header.lo1, uData.header.lo2, uData.header.la1, uData.header.la2],
+            'dx' : uData.header.dx,
+            'dy' : uData.header.dy
+        };
     }
     _createGLContext(canvas, options) {
         const names = ['webgl', 'experimental-webgl'];
@@ -495,7 +507,12 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
             u_color_ramp: this._colorRampTexture,
             u_particles_res: this._particleStateResolution,
             u_wind_min: [this._windData.uMin, this._windData.vMin],
-            u_wind_max: [this._windData.uMax, this._windData.vMax]
+            u_wind_max: [this._windData.uMax, this._windData.vMax],
+            full_width : this._windData.width,
+            full_height : this._windData.height,
+            full_extent : this._windData.full_extent,
+            dx : this._windData.dx,
+            dy : this._windData.dy
         }, particleScene, this._framebuffer);
     }
 
@@ -516,6 +533,11 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
             u_speed_factor: this._speedFactor,
             u_drop_rate: this._dropRate,
             u_drop_rate_bump: this._dropRateBump,
+            full_width : this._windData.width,
+            full_height : this._windData.height,
+            full_extent : this._windData.full_extent,
+            dx : this._windData.dx,
+            dy : this._windData.dy
         }, quadScene, this._framebuffer);
 
         const temp = this._particleStateTexture0;
@@ -538,6 +560,10 @@ class WindLayerRenderer extends maptalks.renderer.CanvasRenderer {
         if (extent.xmax < extent.xmin) {
             extent.xmax = extent.xmax + 360;
         }
+        extent.xmin = extent.xmin < this._windData.full_extent[0] ? this._windData.full_extent[0] : extent.xmin;
+        extent.xmax = extent.xmax > this._windData.full_extent[1] ? this._windData.full_extent[1] : extent.xmax;
+        extent.ymin = extent.ymin < this._windData.full_extent[2] ? this._windData.full_extent[2] : extent.ymin;
+        extent.ymax = extent.ymax > this._windData.full_extent[3] ? this._windData.full_extent[3] : extent.ymax;
         return extent;
     }
 

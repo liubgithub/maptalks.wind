@@ -8,12 +8,22 @@ uniform sampler2D u_color_ramp;
 varying vec2 v_particle_pos;
 uniform vec4 extent;
 
+uniform vec4 full_extent;
+uniform float full_width;
+uniform float full_height;
+uniform float dx;
+uniform float dy;
+
 //重新计算视图区域的纹理采样坐标，将粒子缩放到extent范围内
 vec2 computeUV(vec2 v_particle_pos) {
-    float xmin = (extent.x + 180.0) / 360.0;
-    float ymin = (extent.z + 90.0) / 180.0;
-    float xmax = (extent.y + 180.0) / 360.0;
-    float ymax = (extent.w + 90.0) / 180.0;
+    // float xmin = (extent.x - full_extent.x) / (full_width * dx);
+    // float ymin = (extent.z - full_extent.z) / (full_height * dy);
+    // float xmax = (extent.y - full_extent.x) / (full_width * dx);
+    // float ymax = (extent.w - full_extent.z) / (full_height * dy);
+    float xmin = (extent.x - (-180.0)) / (360.0 * 1.0);
+    float ymin = (extent.z - (-90.0)) / (180.0 * 1.0);
+    float xmax = (extent.y - (-180.0)) / (360.0 * 1.0);
+    float ymax = (extent.w - (-90.0)) / (180.0 * 1.0);
     float xWidth = xmax - xmin;
     float yHeight = ymax - ymin;
     vec2 centerUv = vec2(0.5, 0.5);

@@ -7,7 +7,10 @@ const windData = {
         "uMin": -21.32,
         "uMax": 26.8,
         "vMin": -21.57,
-        "vMax": 21.42
+        "vMax": 21.,
+        "full_extent" : [-180, 180, -90, 90],
+        "dx" : 1.0,
+        "dy" : 1.0
     },
     '2016112000': {
         "source": "http://nomads.ncep.noaa.gov",
@@ -17,7 +20,10 @@ const windData = {
         "uMin": -21.32,
         "uMax": 26.8,
         "vMin": -21.57,
-        "vMax": 21.42
+        "vMax": 21.42,
+        "full_extent" : [-180, 180, -90, 90],
+        "dx" : 1.0,
+        "dy" : 1.0
     },
     '2016112006': {
         "source": "http://nomads.ncep.noaa.gov",
@@ -27,7 +33,10 @@ const windData = {
         "uMin": -19.38,
         "uMax": 25.57,
         "vMin": -21.19,
-        "vMax": 22.77
+        "vMax": 22.77,
+        "full_extent" : [-180, 180, -90, 90],
+        "dx" : 1.0,
+        "dy" : 1.0
     },
     '2016112012': {
         "source": "http://nomads.ncep.noaa.gov",
@@ -37,7 +46,10 @@ const windData = {
         "uMin": -18.22,
         "uMax": 23.94,
         "vMin": -20.24,
-        "vMax": 21
+        "vMax": 21,
+        "full_extent" : [-180, 180, -90, 90],
+        "dx" : 1.0,
+        "dy" : 1.0
     },
     '2016112018': {
         "source": "http://nomads.ncep.noaa.gov",
@@ -47,7 +59,10 @@ const windData = {
         "uMin": -20.26,
         "uMax": 23.24,
         "vMin": -20.41,
-        "vMax": 19.66
+        "vMax": 19.66,
+        "full_extent" : [-180, 180, -90, 90],
+        "dx" : 1.0,
+        "dy" : 1.0
     },
     '2016112100': {
         "source": "http://nomads.ncep.noaa.gov",
@@ -57,7 +72,10 @@ const windData = {
         "uMin": -19.16,
         "uMax": 26.04,
         "vMin": -22.08,
-        "vMax": 19.17
+        "vMax": 19.17,
+        "full_extent" : [-180, 180, -90, 90],
+        "dx" : 1.0,
+        "dy" : 1.0
     },
     '2016112106': {
         "source": "http://nomads.ncep.noaa.gov",
@@ -67,7 +85,10 @@ const windData = {
         "uMin": -19.73,
         "uMax": 24.57,
         "vMin": -21.79,
-        "vMax": 19.6
+        "vMax": 19.6,
+        "full_extent" : [-180, 180, -90, 90],
+        "dx" : 1.0,
+        "dy" : 1.0
     },
     '2016112112': {
         "source": "http://nomads.ncep.noaa.gov",
@@ -77,7 +98,10 @@ const windData = {
         "uMin": -21.69,
         "uMax": 25.09,
         "vMin": -20.24,
-        "vMax": 19.17
+        "vMax": 19.17,
+        "full_extent" : [-180, 180, -90, 90],
+        "dx" : 1.0,
+        "dy" : 1.0
     },
     '2016112118': {
         "source": "http://nomads.ncep.noaa.gov",
@@ -87,7 +111,10 @@ const windData = {
         "uMin": -24.02,
         "uMax": 26.31,
         "vMin": -20.91,
-        "vMax": 21.22
+        "vMax": 21.22,
+        "full_extent" : [-180, 180, -90, 90],
+        "dx" : 1.0,
+        "dy" : 1.0
     },
     '2016112200': {
         "source": "http://nomads.ncep.noaa.gov",
@@ -97,6 +124,9 @@ const windData = {
         "uMin": -21.38,
         "uMax": 24.52,
         "vMin": -21.05,
-        "vMax": 19.43
+        "vMax": 19.43,
+        "full_extent" : [-180, 180, -90, 90],
+        "dx" : 1.0,
+        "dy" : 1.0
     }
 };

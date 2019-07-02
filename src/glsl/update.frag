@@ -9,10 +9,15 @@ uniform float u_rand_seed;
 uniform float u_speed_factor;
 uniform float u_drop_rate;
 uniform float u_drop_rate_bump;
+uniform vec4 full_extent;
+uniform float full_width;
+uniform float full_height;
 
 varying vec2 v_tex_pos;
 
 uniform vec4 extent;
+uniform float dx;
+uniform float dy;
 
 // pseudo-random generator
 const vec3 rand_constants = vec3(12.9898, 78.233, 4375.85453);
@@ -22,10 +27,14 @@ float rand(const vec2 co) {
 }
 
 vec2 getNewUV(vec2 uv) {
-    float xmin = (extent.x + 180.0) / 360.0;
-    float ymin = (extent.z + 90.0) / 180.0;
-    float xmax = (extent.y + 180.0) / 360.0;
-    float ymax = (extent.w + 90.0) / 180.0;
+    // float xmin = (extent.x - full_extent.x) / (full_width * dx);
+    // float ymin = (extent.z - full_extent.z) / (full_height * dy);
+    // float xmax = (extent.y - full_extent.x) / (full_width * dx);
+    // float ymax = (extent.w - full_extent.z) / (full_height * dy);
+    float xmin = (extent.x - (-180.0)) / (360.0);
+    float ymin = (extent.z - (-90.0)) / (180.0);
+    float xmax = (extent.y - (-180.0)) / (360.0);
+    float ymax = (extent.w - (-90.0)) / (180.0);
     float xWidth = xmax - xmin;
     float yHeight = ymax - ymin;
     vec2 centerUv = vec2(0.5, 0.5);
@@ -80,7 +89,7 @@ void main() {
         float speed_t = length(velocity) / length(u_wind_max);
     
         // take EPSG:4236 distortion into account for calculating where the particle moved
-        float distortion = cos(radians(newUV.y * 180.0 - 90.0));
+        float distortion = cos(radians(newUV.y));
         vec2 offset = vec2(velocity.x / distortion, -velocity.y) * 0.0001 * u_speed_factor;
     
         // update particle position, wrapping around the date line
